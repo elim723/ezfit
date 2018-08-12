@@ -51,15 +51,16 @@ class Library (object):
             --------------------------------------------------
             In [2] : nufile = 'nuisance_textfiles/nuparams_template.txt'
             In [3] : nuParams = nuparams.Nuparams (nufile, isinverted=False)
-            In [4] : params = nuParams.extract_params ('seeded_mc')
+            In [4] : params = nuParams.extract_params ('seeded')
             In [5] : lib.set_weighters (params, oscnc=False)
             In [6] : basehistos = lib.collect_base_histograms (params)
             NOTE: weighters for baseline members are stored in Library.
             
             Example to get all systematic histograms for a specific data type
             -----------------------------------------------------------------
-            In [7] : dparams = nuParams.get_active_dparams () 
-            In [8] : refvalues, histos = lib.collect_sys_histograms ('numucc', params, dparams)
+            In [7] : hparams = nuParams.get_hplaned_dparams () 
+            In [8] : refvalues, histos = lib.collect_sys_histograms ('numucc',
+                                                                     params, hparams)
             NOTE: everytime collect_sys_histograms () is called, it creates
                   a one-time use weighter for each member called.
 
@@ -99,6 +100,18 @@ class Library (object):
                 
                 ## a library must have baseline sets
                 self._baseline = self._collect_base_members ()
+
+        def __getstate__ (self):
+
+                ''' get state for pickling '''
+
+                return self.__dict__
+
+        def __setstate__ (self, d):
+
+                ''' set state for pickling '''
+
+                self.__dict__ = d
 
         def __call__ (self, dtype):
 
@@ -143,34 +156,31 @@ class Library (object):
                                 raise InvalidArguments (message)
                 return
 
-        def _check_setid (self, fname, dictionary, setid, refvalues):
+        def _check_setid (self, fname, dtype, dictionary, setid, default):
 
                 ''' check if setid already exists in a dictionary
 
                     :type  fname: a string
                     :param fname: name of the function calling _check_setid
 
+                    :type  dtype: a string
+                    :param dtype: name of data type (for default sysvalues)
+
                     :type  dictionary: a Map / python dictionary
                     :param dictionary: dictionary to be checked
+
+                    :type    default: a dictionary
+                    :param   default: keys/default values of discrete systematics
 
                     :type  setid: a string
                     :param setid: systematic values separated by '_' as the id of this set
 
-                    :type  refvalues: a dictionary
-                    :param refvalues: keys/values of reference set
-
                     :return  isref: a boolean
                     :        isref: If True, this is a reference set
                 '''
-
-                refid = self._get_setid (refvalues)
                 
-                if setid in dictionary and not refid == setid:
-                        message = 'Library:'+fname+' : WARNING : setid (' + setid + ') already exist in the dictionary !'
-                        print ('{0}'.format (message))
-                        message = 'Library:'+fname+' : WARNING : going to over write for now ..'
-                        print ('{0}'.format (message))
-                return refid == setid
+                defid = self._get_setid (default)
+                return defid == setid
 
         def _get_setid (self, sysvalues):
 
@@ -189,44 +199,44 @@ class Library (object):
                         if not i == len (sysvalues)-1: setid += '_'
                 return setid
         
-        def _get_sysvalues (self, set_value, dtype, dparam, sysvalues):
+        def _get_setvalues (self, set_value, dtype, hparam, default):
 
-                ''' get the sysvalues dictionary for the specific discrete set
+                ''' get the values dictionary for the specific discrete set
 
                     :type     set_value: a float
                     :param    set_value: value of one of the dparam sets
 
-                    :type     dparam: a string
-                    :param    dparam: name of the discrete systematics
+                    :type     hparam: a string
+                    :param    hparam: name of the discrete systematics
 
                     :type      dtype: a string
                     :param     dtype: name of the data type
 
-                    :type    sysvalues: a dictionary
-                    :param   sysvalues: default nominal keys/values of discrete systematics
+                    :type    default: a dictionary
+                    :param   default: keys/default values of discrete systematics
 
-                    :return  sysvalues: a dictionary
-                    :        sysvalues: keys/values of discrete systematics for the set
+                    :return  setvalues: a dictionary
+                    :        setvalues: keys/values of discrete systematics for the set
 
                     :return      setid: a string
                     :            setid: systematic values separated by '_' as the id of this set
                 '''
-                
-                sysvalues = deepcopy (sysvalues)
-                sysvalues[dparam] = set_value
+
+                setvalues = deepcopy (default)
+                setvalues[hparam] = set_value
                 ### modification for muons
                 if 'muon' in dtype:
                         ## if absorption / scattering: oversizing = 3
-                        if dparam in ['absorption', 'scattering']: sysvalues['oversizing'] = 3
+                        if hparam in ['absorption', 'scattering']: setvalues['oversizing'] = 3
                         ## if domeff / forward: holeice = 30
-                        if dparam in ['domeff', 'forward']: sysvalues['holeice'] = 30
+                        if hparam in ['domeff', 'forward']: setvalues['holeice'] = 30
                 ### modification for off axis bulkice sets
-                if dparam == 'absorption' and set_value in [0.929, 1.142]:
-                        sysvalues['scattering'] = set_value
+                if hparam == 'absorption' and set_value in [0.929, 1.142]:
+                        setvalues['scattering'] = set_value
 
                 ### define ID for this set
-                setid = self._get_setid (sysvalues)
-                return setid, sysvalues
+                setid = self._get_setid (setvalues)
+                return setid, setvalues
         
         def _collect_base_members (self):
 
@@ -243,38 +253,43 @@ class Library (object):
                                                  baseline=True )
                 return members
 
-        def _collect_sys_members (self, dtype, dparam, default_sysvalues, has_bulkice):
+        def _collect_sys_members (self, dtype, hparam, default, has_bulkice):
 
                 ''' collect all set members for a specific data type
                     and a specific discrete parameter
 
-                    :type     dparam: a string
-                    :param    dparam: name of the discrete systematics
+                    :type     hparam: a string
+                    :param    hparam: name of the discrete systematics
 
                     :type      dtype: a string
                     :param     dtype: name of the data type
 
-                    :type    default_sysvalues: a dictionary
-                    :param   default_sysvalues: nominal keys/values of discrete systematics
+                    :type    default: a dictionary
+                    :param   default: keys/default values of discrete systematics
 
                     :type    has_bulkice: a boolean
                     :param   has_bulkice: if True, include bulk ice off axis points
 
                     :return  members: a Map object
-                             members: contains all members objects
+                             members: 99contains all members objects
                 '''
                 
                 set_members = Map ({})
-                sets = get_sets (dtype, dparam, has_bulkice=has_bulkice)
+                sets = get_sets (dtype, hparam, has_bulkice=has_bulkice)
                 for s in sets:
-                        setid, sysvalues = self._get_sysvalues (s, dtype, dparam, default_sysvalues)
-                        isref = self._check_setid ('collect_sys_members', set_members, setid, default_sysvalues)
-                        ## don't waste time if it is the ref set and already stored
-                        if isref and setid in set_members: continue
+                        setid, setvalues = self._get_setvalues (s, dtype, hparam, default)
+                        isdef = self._check_setid ('collect_sys_members', dtype, set_members, setid, default)
+                        ## don't waste time if it is the default set and already stored
+                        if setid in set_members:
+                                if not defid == setid:
+                                        message = 'Library:'+fname+' : WARNING : setid (' + \
+                                                  setid + ') already exist in the dictionary !'
+                                        print ('{0}'.format (message))
+                                continue
                         set_members [setid] = Member (dtype, self._pdictpath,
                                                       ranges=self._ranges,
                                                       baseline=False,
-                                                      sysvalues=sysvalues)
+                                                      sysvalues=setvalues)
                 return set_members
 
         def _get_histogram (self, member, params,
@@ -312,13 +327,14 @@ class Library (object):
                 else:
                         ## NOT BASELINE: one-time weighter
                         pmap = self.probmaps[dtype[:-2]] if 'nu' in dtype else None
-                        weighter = member.get_weighter (params, matter=matter, oscnc=oscnc, pmap=pmap)
+                        weighter = member.get_weighter (params, matter=matter,
+                                                        oscnc=oscnc, pmap=pmap)
                 
                 weights = member.get_weights (params, weighter=weighter)
                 H, H2 = member.get_histogram (self._edges, weights=weights)
                 return Map ({'H':H, 'H2':H2})
 
-        def _get_sys_histograms (self, dtype, params, refvalues, has_bulkice,
+        def _get_sys_histograms (self, dtype, params, hparams, default,
                                  matter=True, oscnc=False):
 
                 ''' get all systematic histograms of a data type.
@@ -329,11 +345,11 @@ class Library (object):
                     :type     params: a dictionary
                     :param    params: values of floating parameters
 
-                    :type    refvalues: a dictionary
-                    :param   refvalurs: reference values of discrete parameters
+                    :type    hparams: a list
+                    :param   hparams: discrete parameters to be included in hplane
 
-                    :type   has_bulkice: a boolean
-                    :param  has_bulkice: if True, include bulk ice off axis sets
+                    :type    default: a dictionary
+                    :param   default: keys/default values of discrete systematics
 
                     :type    matter: boolean
                     :param   matter: if True, include matter effect
@@ -346,19 +362,20 @@ class Library (object):
                 '''
                 
                 histos = Map ({})
-                for dp in sorted (refvalues):
+                has_bulkice = 'scattering' in hparams and 'absorption' in hparams
+                for hp in sorted (hparams):
                         ## get member of this discrete param
-                        members = self._collect_sys_members (dtype, dp, refvalues, has_bulkice)
+                        members = self._collect_sys_members (dtype, hp, default, has_bulkice)
                         ## get histogram from each set
                         for setid in members:
-                                isref = self._check_setid ('get_sys_histograms', histos, setid, refvalues)
+                                isdef = self._check_setid ('get_sys_histograms', dtype, histos, setid, default)
                                 histos [setid] = self._get_histogram (members[setid], params,
                                                                       isbaseline=False, 
                                                                       matter=matter, oscnc=oscnc)
-                                # define normalization factor if reference set
-                                if isref: norm = np.sum (histos[setid]['H'])
+                                # define normalization factor if default set
+                                if isdef: norm = np.sum (histos[setid]['H'])
                                 # apply normalization factor if coin set
-                                if dp=='coin': histos [setid]['H'] *= norm / np.sum (histos [setid]['H'])
+                                if hp=='coin': histos [setid]['H'] *= norm / np.sum (histos [setid]['H'])
 
                 return histos
         
@@ -380,7 +397,8 @@ class Library (object):
                 '''
 
                 if not obs in self._ranges:
-                        message = 'Library:get_ranges::'+obs+' is not an observable in this library.'
+                        message = 'Library:get_ranges::' + obs + \
+                                  ' is not an observable in this library.'
                         raise InvalidArgument (message)
                         
                 return self._ranges [obs]
@@ -397,7 +415,8 @@ class Library (object):
                 '''
 
                 if not obs in self._edges:
-                        message = 'Library:get_edges::'+obs+' is not an observable in this library.'
+                        message = 'Library:get_edges::' + obs + \
+                                  ' is not an observable in this library.'
                         raise InvalidArgument (message)
                 
                 return self._edges [obs]
@@ -407,7 +426,8 @@ class Library (object):
 
                 ''' set weighters for each member into self.
                     weighters per data type (for all systematic sets)
-                    probmaps per numu / nue / nutau (for both CC and NC and all systematic sets)
+                    probmaps per numu / nue / nutau (for both CC and
+                    NC and all systematic sets)
 
                     :type    params: a dictionary
                     :param   params: values of floating parameters
@@ -422,7 +442,8 @@ class Library (object):
                 weighters = Map ({})
                 pmaps = self.probmaps if hasattr (self, 'probmaps') else Map ({})
                 for dtype in self._dtypes:
-                        pmap = pmaps [dtype[:-2]] if 'nu' in dtype and dtype[:-2] in pmaps \
+                        pmap = pmaps [dtype[:-2]] if 'nu' in dtype and \
+                               dtype[:-2] in pmaps \
                                else None
                         weighters [dtype] = self._baseline[dtype].get_weighter (params,
                                                                                 matter=matter,
@@ -431,7 +452,7 @@ class Library (object):
                         if 'nu' in dtype: pmaps [dtype[:-2]] = weighters[dtype].probmap 
                 self.weighters = weighters
                 self.probmaps  = pmaps
-                
+
         def collect_base_histograms (self, params,
                                      matter=True, oscnc=False):
 
@@ -466,7 +487,7 @@ class Library (object):
                                                               matter=matter, oscnc=oscnc)
                 return histos
 
-        def collect_sys_histograms (self, dtype, params, dparams,
+        def collect_sys_histograms (self, dtype, params, hparams,
                                     matter=True, oscnc=False):
 
                 ''' collect all systematic histograms of a data type
@@ -480,8 +501,8 @@ class Library (object):
                     :type     params: a dictionary
                     :param    params: values of floating parameters
 
-                    :type    dparams: a list
-                    :param   dparams: discrete parameters included
+                    :type    hparams: a list
+                    :param   hparams: discrete parameters included in hyperplane
 
                     :type    matter: boolean
                     :param   matter: if True, include matter effect
@@ -489,30 +510,27 @@ class Library (object):
                     :type     oscnc: boolean
                     :param    oscnc: if True, oscillate NC events
                 
-                    :return  refvalues: a dictionary
-                             refvalues: reference values of discrete systematics
-
                     :return  histos: a dictionary
                              histos: all baseline histograms
                 '''
 
                 ## check dicts
                 if not toolbox.is_dict (params):
-                        message = 'Library:get_sys_histograms :: params must be a dictionary.'
+                        message = 'Library:collect_sys_histograms :: params must be a dictionary.'
                         raise InvalidArguments (message)
                 ## check list
-                if not toolbox.is_array (dparams):
-                        message = 'Library:get_sys_histograms :: dparams must be a list / array.'
+                if not toolbox.is_array (hparams):
+                        message = 'Library:collect_sys_histograms :: hparams must be a list / array.'
                         raise InvalidArguments (message)
 
                 ## collect sys histogram from all discrete sets of this data type
-                refvalues = default_mu_sysvalues if 'muon' in dtype else default_nu_sysvalues 
-                has_bulkice = 'scattering' in dparams and 'absorption' in dparams
-                histos = self._get_sys_histograms (dtype, params, refvalues, has_bulkice,
+                default = default_mu_sysvalues if 'muon' in dtype else default_nu_sysvalues
+                hparams = sorted ([ param for param in default if param in hparams ])
+                histos = self._get_sys_histograms (dtype, params, hparams, default,
                                                    matter=matter, oscnc=oscnc)
-                return refvalues, histos
+                return histos
 
-        def get_hplanes (self, nuparams, matter=True, oscnc=False, verbose=1):
+        def get_hplanes (self, nuparams, params, matter=True, oscnc=False, verbose=1):
 
                 ''' collect hyperplane objects from all data types
                     Note: hyperplanes are based upon systematic histograms
@@ -523,6 +541,9 @@ class Library (object):
 
                     :type   nuparams: a Nuparams object
                     :param  nuparams: user settings of floating parameters
+
+                    :type   params: a dictionary
+                    :param  params: parameters used for hyperplane
 
                     :type    matter: boolean
                     :param   matter: if True, include matter effect
@@ -539,43 +560,46 @@ class Library (object):
                              hplanes: a dictionary of hyperplane objects
                 '''
                 
-                ## collect hyperplane objects
-                hplanes = Map ({})
-                dparams = nuparams.get_active_dparams ()
-                ## hyperplane is built only if at least one discrete parameter
-                if len (dparams) == 0: return hplanes
-                
-                ## floating parameter values from which weights
-                ## are calculated for all systematic histograms
-                params = nuparams.extract_params ('seeded_mc')
+                ## collect systematic histograms
+                #params = nuparams.extract_params ('seeded')
                 ## only for neutrinos and muons
                 dtypes = [ dtype for dtype in self._dtypes if dtype[:2] in ['nu', 'mu'] ]
                 ## collect systematic information
-                sysinfo = Map ({})
+                syshistos = Map ({})
                 for dtype in dtypes:
-                        refvalues, histos = self.collect_sys_histograms (dtype, params, dparams,
-                                                                         matter=matter, oscnc=oscnc)
-                        sysinfo[dtype] = {'refvalues':refvalues, 'histos':histos}
+                        hparams = nuparams.get_hplaned_dparams (dtype)                        
+                        syshistos[dtype] = self.collect_sys_histograms (dtype, params, hparams,
+                                                                        matter=matter,
+                                                                        oscnc=oscnc)
+                        
                 ## special treatment for nunc
                 nc = sorted ([ dtype for dtype in dtypes if 'nc' in dtype ])
                 if len (nc) > 0:
-                        dtypes = sorted ([ dtype for dtype in dtypes if not 'nc' in dtype ] + ['nunc'])
+                        dtypes = sorted ([ dtype for dtype in dtypes if not 'nc' in dtype ] + \
+                                         ['nunc'])
+
+                ## collect hyperplane objects
+                hplanes = Map ({})
                 ## get hplanes
                 for dtype in dtypes:
+                        hparams = nuparams.get_hplaned_dparams (dtype)
+                        ## hyperplane is built only if at least one discrete parameter
+                        if len (hparams) == 0:
+                                hplanes[dtype] = None; continue
                         expparams = nuparams.get_exp_dparams (dtype)
-                        refvalues, histos = self.merge_nunc (dtype, sysinfo, nc)
-                        hplanes[dtype] = HyperPlane (dtype, histos, expparams, refvalues, verbose=verbose) 
+                        histos = self.merge_nunc (dtype, syshistos, nc)
+                        hplanes[dtype] = HyperPlane (dtype, histos, expparams, hparams, verbose=verbose) 
                 return hplanes
 
-        def merge_nunc (self, dtype, sysinfo, ncdtypes):
+        def merge_nunc (self, dtype, histos, ncdtypes):
 
                 ''' merge any nc members into one histogram
 
                     :type      dtype: a string
                     :param     dtype: name of data type
 
-                    :type  sysinfo: a dictionary
-                    :param sysinfo: includes refvalues and systematic histograms
+                    :type  histos: a dictionary
+                    :param histos: histograms of all discrete sets from all dtypes
 
                     :type  ncdtypes: a list 
                     :param ncdtypes: nc data type
@@ -588,15 +612,16 @@ class Library (object):
                 '''
 
                 ## return if not nunc
-                if not 'nc' in dtype:
-                        return sysinfo[dtype]['refvalues'], sysinfo[dtype]['histos']
+                if not 'nc' in dtype: return histos[dtype]
 
                 ## massage nc
-                histos = Map ({})
-                for setid in sysinfo[ncdtypes[0]]['histos']:
-                        histos[setid] = {'H': sum ([ sysinfo[ncdtype]['histos'][setid]['H'] for ncdtype in ncdtypes ]),
-                                         'H2': sum ([ sysinfo[ncdtype]['histos'][setid]['H2'] for ncdtype in ncdtypes ]) }
-                return sysinfo[ncdtypes[0]]['refvalues'], histos
+                nchistos = Map ({})
+                for setid in histos[ncdtypes[0]]:
+                        nchistos[setid] = {'H': sum ([ histos[ncdtype][setid]['H']
+                                                       for ncdtype in ncdtypes ]),
+                                           'H2': sum ([ histos[ncdtype][setid]['H2']
+                                                        for ncdtype in ncdtypes ]) }
+                return nchistos
                         
         def apply_hplanes (self, bhistos, hplanes, params):
 
@@ -614,7 +639,7 @@ class Library (object):
                     :return mhistos: a dictionary
                             mhistos: modified baseline histograms
                 '''
-                
+
                 mhistos = Map ({})
                 for dtype in self._dtypes:
                         hplane = hplanes['nunc'] if 'nc' in dtype else \

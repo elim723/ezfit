@@ -45,6 +45,18 @@ class HondaModifier (object):
                         self._ecritical = -hc_coeff[1] / (hc_coeff[0]*2)
                         self._flux_renorm = self._honda_fcn (self._ecritical)-1.
 
+            def __getstate__ (self):
+
+                        ''' get state for pickling '''
+
+                        return self.__dict__
+
+            def __setstate__ (self, d):
+
+                        ''' set state for pickling '''
+                        
+                        self.__dict__ = d
+                              
             def _check_args (self):
                         
                         ''' check user's input arguments '''

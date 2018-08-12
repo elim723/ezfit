@@ -23,14 +23,15 @@ from misc import Map, InvalidArguments
 from misc import discrete_parameters
 from probmap import default_params as default_oscparams
 
-cont_values = [('name'       ,str  ), ('seeded_mc',float), ('injected_data',float),
-               ('included'   ,bool ), ('value'    ,float), ('lower_limit'  ,float),
-               ('upper_limit',float), ('error'    ,float), ('prior'        ,float),
+cont_values = [('name'       ,str  ), ('seeded',float), ('injected'   ,float),
+               ('included'   ,bool ), ('value' ,float), ('lower_limit',float),
+               ('upper_limit',float), ('error' ,float), ('prior'      ,float),
                ('penalty'    ,float)]
-disc_values = [('name'     ,str  ), ('nu_func'      ,str  ), ('mu_func'    ,str  ),
-               ('seeded_mc',float), ('injected_data',float), ('included'   ,bool ),
-               ('value'    ,float), ('lower_limit'  ,float), ('upper_limit',float),
-               ('error'    ,float), ('prior'        ,float), ('penalty'    ,float)]
+disc_values = [('name'       ,str  ), ('nu_func' ,str  ), ('mu_func'    ,str  ),
+               ('seeded'     ,float), ('injected',float), ('hplaned'    ,bool ),
+               ('included'   ,bool ), ('value'   ,float), ('lower_limit',float),
+               ('upper_limit',float), ('error'   ,float), ('prior'      ,float),
+               ('penalty'    ,float)]
 
 ###########################################################################
 #### define functions needed
@@ -54,18 +55,18 @@ def read_param (values, isinverted, *args):
 
             For a continuous param
             ----------------------
-            required: [0] : name       ; [1] : seeded_mc; [2] : injected_data;
-                      [3] : included   ; [4] : value    ; [5] : lower_limit  ;
-                      [6] : upper_limit; [7] : error        
-            optional: [8] : prior   ; [9] : penalty
+            required: [0] : name       ; [1] : seeded; [2] : injected   ;
+                      [3] : included   ; [4] : value ; [5] : lower_limit;
+                      [6] : upper_limit; [7] : error
+            optional: [8] : prior      ; [9] : penalty
 
             For a discrete param
             --------------------
-            required: [0] : name     ; [1] : nu_func      ; [2] : mu_func    ;
-                      [3] : seeded_mc; [4] : injected_data; [5] : included   ;
-                      [6] : value    ; [7] : lower_limit  ; [8] : upper_limit;
-                      [9] : error        
-            optional: [10]: prior    ; [11]: penalty
+            required: [0] : name       ; [1] : nu_func ; [2] : mu_func    ;
+                      [3] : seeded     ; [4] : injected; [5] : hplaned    ;
+                      [6] : included   ; [7] : value   ; [8] : lower_limit;
+                      [9] : upper_limit; [10]: error
+            optional: [11]: prior      ; [12]: penalty
         
             Returns
             -------
@@ -116,7 +117,7 @@ def read_param (values, isinverted, *args):
                                 raise InvalidArguments (message)
                 ## modify values if inverted
                 if isinverted and args[0]=='dm31':
-                        if value in ['seeded_mc', 'injected_data', 'value', 'lower_limit', 'upper_limit']:
+                        if vname in ['seeded', 'injected', 'value', 'lower_limit', 'upper_limit']:
                                 setting *= -1.
                 ## put into param
                 param[vname] = setting
@@ -158,6 +159,18 @@ class Nuparams (object):
                 self._textfile = nuparam_textfile
                 self._isinverted = isinverted
                 self._params = self.read_nuparams ()
+
+        def __getstate__ (self):
+
+                ''' get state for pickling '''
+
+                return self.__dict__
+
+        def __setstate__ (self, d):
+
+                ''' set state for pickling '''
+
+                self.__dict__ = d
                 
         def __call__ (self, param):
                 '''Return the user setting of a given param.
@@ -188,26 +201,29 @@ class Nuparams (object):
                 ## cont params header
                 header = '####   '
                 for i in np.arange (len (cont_values)):
-                        header += '| {'+str(i)+':16} '
+                        n = '16' if i==0 else '11'
+                        header += '| {'+str(i)+':'+n+'} '
                 header += '|'
                 print (header.format (cont_values[0][0].center(16),
-                                      cont_values[1][0].center(16),
-                                      cont_values[2][0].center(16),
-                                      cont_values[3][0].center(16),
-                                      cont_values[4][0].center(16),
-                                      cont_values[5][0].center(16),
-                                      cont_values[6][0].center(16),
-                                      cont_values[7][0].center(16),
-                                      cont_values[8][0].center(16),
-                                      cont_values[9][0].center(16) ))
-                divider = '####   '+'| {0} '*len (cont_values)+'|'
-                print (divider.format ('='*16))
+                                      cont_values[1][0].center(11),
+                                      cont_values[2][0].center(11),
+                                      cont_values[3][0].center(11),
+                                      cont_values[4][0].center(11),
+                                      cont_values[5][0].center(11),
+                                      cont_values[6][0].center(11),
+                                      cont_values[7][0].center(11),
+                                      cont_values[8][0].center(11),
+                                      cont_values[9][0].center(11) ))
+                divider = '####   | {0} '+'| {1} '*(len (cont_values)-1)+'|'
+                print (divider.format ('='*16, '='*11))
                 ## cont params setting
                 for param in sorted (cparams):
                         pdict = self._params[param]
                         pline = '####   '
                         for i in np.arange (len (pdict)-1):
-                                line = '| {'+str(i)+':16} ' if i in [0, 3] else '| {'+str(i)+':16.7f} '
+                                line = '| {'+str(i)+':16} ' if i in [0] else \
+                                       '| {'+str(i)+':11} ' if i in [3] else \
+                                       '| {'+str(i)+':11.7f} '
                                 pline += line
                         pline += '|'
                         ## param with prior given
@@ -239,29 +255,30 @@ class Nuparams (object):
                 ## discrete params header
                 header = '####   '
                 for i in np.arange (len (disc_values)):
-                        header += '| {'+str(i)+':13} '
+                        header += '| {'+str(i)+':11} '
                 header += '|'
-                print (header.format (disc_values[0][0].center(13),
-                                      disc_values[1][0].center(13),
-                                      disc_values[2][0].center(13),
-                                      disc_values[3][0].center(13),
-                                      disc_values[4][0].center(13),
-                                      disc_values[5][0].center(13),
-                                      disc_values[6][0].center(13),
-                                      disc_values[7][0].center(13),
-                                      disc_values[8][0].center(13),
-                                      disc_values[9][0].center(13),
-                                      disc_values[10][0].center(13),
-                                      disc_values[11][0].center(13) ))
+                print (header.format (disc_values[0][0].center(11),
+                                      disc_values[1][0].center(11),
+                                      disc_values[2][0].center(11),
+                                      disc_values[3][0].center(11),
+                                      disc_values[4][0].center(11),
+                                      disc_values[5][0].center(11),
+                                      disc_values[6][0].center(11),
+                                      disc_values[7][0].center(11),
+                                      disc_values[8][0].center(11),
+                                      disc_values[9][0].center(11),
+                                      disc_values[10][0].center(11),
+                                      disc_values[11][0].center(11),
+                                      disc_values[12][0].center(11) ))
                 divider = '####   '+'| {0} '*len (disc_values)+'|'
-                print (divider.format ('='*13))
+                print (divider.format ('='*11))
                 ## disc params setting
                 for param in sorted (dparams):
                         pdict = self._params[param]
                         pline = '####   '
                         for i in np.arange (len (pdict)-1):
-                                line = '| {'+str(i)+':13} ' if i in [0, 1, 2, 5] else \
-                                       '| {'+str(i)+':13.5f} '
+                                line = '| {'+str(i)+':11} ' if i in [0, 1, 2, 5, 6] else \
+                                       '| {'+str(i)+':11.5f} '
                                 pline += line
                         pline += '|'
                         ## param with prior given
@@ -272,12 +289,13 @@ class Nuparams (object):
                                                      pdict[disc_values[3][0]],
                                                      pdict[disc_values[4][0]],
                                                      str (pdict[disc_values[5][0]]),
-                                                     pdict[disc_values[6][0]],
+                                                     str (pdict[disc_values[6][0]]),
                                                      pdict[disc_values[7][0]],
                                                      pdict[disc_values[8][0]],
                                                      pdict[disc_values[9][0]],
                                                      pdict[disc_values[10][0]],
-                                                     pdict[disc_values[11][0]] ))
+                                                     pdict[disc_values[11][0]],
+                                                     pdict[disc_values[12][0]] ))
                         else:
                                 print (pline.format (pdict[disc_values[0][0]],
                                                      pdict[disc_values[1][0]],
@@ -285,10 +303,11 @@ class Nuparams (object):
                                                      pdict[disc_values[3][0]],
                                                      pdict[disc_values[4][0]],
                                                      str (pdict[disc_values[5][0]]),
-                                                     pdict[disc_values[6][0]],
+                                                     str (pdict[disc_values[6][0]]),
                                                      pdict[disc_values[7][0]],
                                                      pdict[disc_values[8][0]],
-                                                     pdict[disc_values[9][0]] ))
+                                                     pdict[disc_values[9][0]],
+                                                     pdict[disc_values[10][0]] ))
                         
                 return ('####') # end discrete param print out
         
@@ -321,8 +340,28 @@ class Nuparams (object):
                              If True, injected are the same as seeded
                 '''
 
-                return not self.extract_params ('seeded_mc') == self.extract_params ('injected_data')
+                return not self.extract_params ('seeded') == self.extract_params ('injected')
                 
+        def get_hplaned_dparams (self, dtype):
+
+                ''' Obtain a list of discrete parameters that is involved
+                    in hyperplane for this data type
+
+                    :return: a list of names of discrete parameters in hplane
+                '''
+
+                ## hyperplane-d parameter holder
+                hparams = []
+                for p in self._params:
+                        ## only discrete and is hplaned
+                        if self._params[p]['isdiscrete'] and \
+                           self._params[p]['hplaned']:
+                                ## muon cannot have coin
+                                if 'muon' in dtype and p=='coin': continue
+                                hparams.append (p)
+
+                return sorted (hparams)
+
         def get_active_dparams (self):
 
                 ''' Obtain a list of discrete parameters that is turned on
@@ -330,12 +369,13 @@ class Nuparams (object):
                     :return: a list of names of active discrete parameters
                 '''
                 
-                return sorted ([ p for p in self._params if self._params[p]['isdiscrete'] and \
+                return sorted ([ p for p in self._params if self._params[p]['isdiscrete'] and 
                                  self._params[p]['included'] ])
 
         def get_exp_dparams (self, dtype):
 
-                ''' Obtain a list of discrete parameters for dtype that has exponential function
+                ''' Obtain a list of discrete parameters for dtype that has
+                    exponential function and involved in hyperplane
 
                     :type  dtype: a string
                     :param dtype: name of a data type
@@ -343,8 +383,8 @@ class Nuparams (object):
                     :return: a list of names of active discrete parameters
                 '''
 
-                dparams = self.get_active_dparams ()
-                return sorted ([ p for p in dparams if 'exp' in self._params[p][dtype[:2]+'_func'] ])
+                hparams = self.get_hplaned_dparams (dtype)
+                return sorted ([ p for p in hparams if 'exp' in self._params[p][dtype[:2]+'_func'] ])
 
         def get_all_params (self):
 
@@ -373,5 +413,6 @@ class Nuparams (object):
                 params = {}
                 for param in self.get_all_params ():
                         collect = False if osconly and not param in default_oscparams else True
-                        if collect: params[param] = self.__call__ (param)[key]
+                        if collect and key in self._params [param]:
+                                params[param] = self._params[param][key]
                 return params

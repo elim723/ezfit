@@ -56,6 +56,18 @@ class SPEPeakCorrector (object):
                         ## perform spline fit
                         self._spline2D = self._spline ()
 
+            def __getstate__ (self):
+
+                        ''' get state for pickling '''
+
+                        return self.__dict__
+
+            def __setstate__ (self, d):
+
+                        ''' set state for pickling '''
+
+                        self.__dict__ = d
+                        
             def __call__ (self, percent_shift):
 
                         ''' get SPE correction factor

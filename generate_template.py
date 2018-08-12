@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-#################################################################################################
 ####
 #### By Elim Cheung (07/24/2018)
 ####
@@ -18,14 +17,13 @@
 ####       However, one can add more arguments to gain
 ####       access to the flexibility of the tool. 
 ####
-#################################################################################################
+###############################################################
 
 from __future__ import print_function
 from optparse import OptionParser
-from template import template
+from template import Template
 import numpy as np
 import time, os, cPickle, socket
-import copy_reg, types, multiprocessing
 
 from misc import eedges, zedges, pedges
 
@@ -39,18 +37,6 @@ print ('####################################################################')
 print ('#### This job is running on {0}.'.format (socket.gethostname ()))
 print ('####################################################################')
 print (' ')
-
-###########################################
-#### function to pickle instances
-###########################################
-def pickle_method (m):
-
-    ''' pickle self objects '''
-    
-    if m.im_self is None:
-        return getattr, (m.im_class, m.im_func.func_name)
-    else:
-        return getattr, (m.im_self, m.im_func.func_name)
 
 ###########################################
 #### parse options/params
@@ -80,7 +66,8 @@ fit_data         = options.fit_data
 neutrinos        = ['numucc', 'nuecc', 'nutaucc', 'numunc', 'nuenc', 'nutaunc']
 backgrounds      = ['noise', 'muon']
 
-pdictpath        = os.path.dirname(os.path.abspath( __file__ )) + '/../pickled_files/'
+pdictpath        = os.path.dirname(os.path.abspath( __file__ )) + \
+                   '/../pickled_files/'
 nuparam_textfile = options.nuparam_textfile
 outfile          = options.outfile
 
@@ -93,7 +80,7 @@ verbose          = options.verbose
 ###########################################
 #### creat temp object
 ###########################################
-temp = template (fit_data=fit_data,
+temp = Template (fit_data=fit_data,
                  neutrinos=neutrinos,
                  backgrounds=backgrounds,
                  eedges=eedges,
@@ -110,8 +97,9 @@ temp = template (fit_data=fit_data,
 ###########################################
 #### save temp object
 ###########################################
+pstring = cPickle.dumps (temp)
 with open (temp.info ('outfile'), 'wb') as f:
-    cPickle.dump (temp, f, protocol=2)
+    cPickle.dump (pstring, f, protocol=2)
 f.close ()
 
 print (' ... it took {0} minuites'.format ((time.time() - start_time)/60.))

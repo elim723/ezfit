@@ -19,6 +19,7 @@ from misc import Toolbox, InvalidArguments
 #### constants needed
 ####################################################################
 from misc import datatypes, global_sysvalues, global_sysexps
+from misc import default_mu_sysvalues, default_nu_sysvalues
 toolbox = Toolbox ()
 
 ## a simple function to convert fitted arrays
@@ -37,18 +38,15 @@ class HyperPlane (object):
         In [0]: import library, nuparams
         In [1]: nufile = 'nuisance_textfiles/nuparams_template.txt'
         In [2]: nuParams = nuparams.Nuparams (nufile, isinverted=False)
-        In [3]: params = nuParams.extract_params ('seeded_mc')
-        In [4]: dparams = nuParams.get_active_dparams ()
-        In [5]: expparams = nuParams.get_exp_dparams ('numucc')
-        In [6]: lib = library.Library (['numucc'], 'pickled_files/')
-        In [7]: numucc_hplane = lib.get_hplanes ('numucc', params, dparams, expparams)
+        In [3]: lib = library.Library (['numucc'], 'pickled_files/')
+        In [4]: numucc_hplane = lib.get_hplanes (nuParams)
 
         Example to apply factors using the hyperplane object
         ----------------------------------------------------
-        In [9]: factors = numucc_hplane.apply (params)
+        In [5]: factors = numucc_hplane.apply (params)
     '''
     
-    def __init__ (self, dtype, histos, expfuncs, refvalues, verbose=0):
+    def __init__ (self, dtype, histos, expparams, hparams, verbose=0):
 
         ''' initialize a hyperplane for a given data type
 
@@ -59,11 +57,11 @@ class HyperPlane (object):
             :param  histos: contain histograms of all discrete
                             sets for this data type
 
-            :type   expfuncs: list of string
-            :param  expfuncs: discrete parameter names with exp functions
+            :type   expparams: list of string
+            :param  expparams: discrete parameter names with exp functions
 
-            :type   refvalues: a dictionary
-            :param  refvalues: reference values of discrete systematics
+            :type   hparams: a list / array 
+            :param  hparams: discrete parameters included in hyperplane
 
             :type   verbose: an int
             :param  verbose: If 0, no printout
@@ -73,20 +71,34 @@ class HyperPlane (object):
 
         self._dtype = dtype
         self._histos = histos
-        self._expfuncs = expfuncs
-        self._refvalues = refvalues
+        self._hparams = sorted (hparams)
+        self._expparams = expparams
         self._verbose = verbose
         self._check_args ()
 
         ## set parameters
-        self._dparams = sorted (self._refvalues)
-        self._refvalues = [ self._refvalues[dp] for i, dp in enumerate (self._dparams) ]
+        self._default = default_mu_sysvalues if 'muon' in dtype else default_nu_sysvalues
+        ## add oversizing in case of muon
+        if 'muon' in dtype: self._hparams += ['oversizing'] 
+        self._refvalues = [ global_sysvalues[hparam] for hparam in self._hparams ]
         self._fitparams, self._fitseeds = self._set_params ()
         ## print info if verbose
         if self._verbose > 1: self._print_params ()
 
         ## fit hyperplane (the meat)
         self._ndof, self._coeffs, self._chi2_before, self._chi2_after = self._fit_plane ()
+
+    def __getstate__ (self):
+
+        ''' get state for pickling '''
+
+        return self.__dict__
+
+    def __setstate__ (self, d):
+
+        ''' set state for pickling '''
+
+        self.__dict__ = d
         
     def _check_args (self):
 
@@ -98,15 +110,15 @@ class HyperPlane (object):
             raise InvalidArguments (message)
 
         ## check histos / refvalues
-        for arg in ['histos', 'refvalues']:
-            if not toolbox.is_dict (eval ('self._'+arg)):
-                message = 'Member:check_args :: '+arg+' must be a dictionary / Map.'
-                raise InvalidArguments (message)
+        if not toolbox.is_dict (self._histos):
+            message = 'Member:check_args :: histos must be a dictionary / Map.'
+            raise InvalidArguments (message)
 
         ## check nuparams
-        if not toolbox.is_array (self._expfuncs):
-            message = 'Member:check_args :: expfuncs must be a list or array.'
-            raise InvalidArguments (message)
+        for arg in ['expparams', 'hparams']:
+            if not toolbox.is_array (eval ('self._'+arg)):
+                message = 'Member:check_args :: '+arg+' must be a list or array.'
+                raise InvalidArguments (message)
         
     def _check_params (self, params):
 
@@ -118,7 +130,7 @@ class HyperPlane (object):
             raise InvalidArguments (message)
         
         ## check if all parameters are available
-        for param in self._dparams:
+        for param in self._hparams:
             if param not in params.keys ():
                 message = 'Hyperplane:check_params :: '+param+' must be in params'
                 raise InvalidArguments (message)
@@ -151,7 +163,7 @@ class HyperPlane (object):
         print ('#### ----------------------------------------------')
         for i, fp in enumerate (self._fitparams):
             parameter, seed = fp, np.round (self._fitseeds[i], 4)
-            value = '--' if fp not in self._dparams else np.round (self._refvalues[i], 4)
+            value = '--' if fp not in self._hparams else np.round (self._refvalues[i], 4)
             print ('#### {0:16} | {1:12} | {2:12}'.format (parameter, seed, value))
         print ('####')
 
@@ -191,7 +203,7 @@ class HyperPlane (object):
             print ('####     {0}'.format ('-'*(30+6)))
 
         ## print values in progress
-        for index, param in enumerate (list (self._dparams) + ['constant']):
+        for index, param in enumerate (list (self._hparams) + ['constant']):
             refvalue, fitvalue, expvalue = self._find_values (coeffs, param, index)
             expvalue = np.round (expvalue, 4) if expvalue else '-----'.center (10)
             print ('####     {0:10} | {1:10} | {2:10} '.format (param.center (10),
@@ -219,8 +231,8 @@ class HyperPlane (object):
         
         ## define hyperplane fit parameters (systematic + extra exps + constant)
         ## add exp parameter for any exponential set by user
-        exparams = sorted ([ dparam+'_exp' for dparam in self._expfuncs ])
-        fitparams = list (self._dparams) + exparams + ['constant']
+        exparams = sorted ([ hparam+'_exp' for hparam in self._hparams if hparam in self._expparams])
+        fitparams = list (self._hparams) + exparams + ['constant']
         ## seeds for each fit parameters
         fitseeds = [ self._get_seed (fp) for fp in fitparams ]
         return fitparams, fitseeds
@@ -238,7 +250,7 @@ class HyperPlane (object):
         
         if param == 'constant':
             seed = 1.0
-        elif param in self._dparams:
+        elif param in self._hparams:
             seed = 0.0 ## seeds for flat space
         elif param in global_sysexps:
             seed = global_sysexps [param]
@@ -256,9 +268,9 @@ class HyperPlane (object):
         '''
         
         refid = ''
-        for i, dp in enumerate (self._dparams):
-            refid += str (float (self._refvalues[i]))
-            if not i==len (self._dparams)-1: refid += '_'
+        for i, dp in enumerate (sorted (self._default)):
+            refid += str (float (self._default[dp]))
+            if not i==len (self._default)-1: refid += '_'
         return refid
 
     def _get_values (self):
@@ -531,7 +543,7 @@ class HyperPlane (object):
         yest = coeffs [-1]
         
         ## loop through each discrete parameter
-        for index, param in enumerate (self._dparams):
+        for index, param in enumerate (self._hparams):
             
             ## get values
             setvalue = xvalues[index]
@@ -560,6 +572,7 @@ class HyperPlane (object):
                             given the parameter values
         '''
 
+        params = deepcopy (params)
         ## add oversizing if muon
         if 'muon' in self._dtype:
             params ['oversizing'] = 1.0
@@ -568,7 +581,7 @@ class HyperPlane (object):
         self._check_params (params)
 
         ## massage parameter values
-        xvalues = np.array ([ params[p] for p in self._dparams ])
+        xvalues = np.array ([ params[p] for p in self._hparams ])
         ## evalulate
         result = self._eval (xvalues, self._coeffs)
         result [result<0.] = 0.

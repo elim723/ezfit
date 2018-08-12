@@ -21,7 +21,7 @@ import os, types
 ##### define all default constants
 ###########################################################################
 ## greco data effective livetime
-greco_nyears = 2.7492241
+greco_nyears = 2.27
 
 ## for histogram binning
 eedges           = 10**np.linspace(0.75, 1.75, 9)
@@ -247,7 +247,20 @@ class Info (object):
                 self._inputs = self._convert (**kwargs)
                 self._check_info ()
 
+        def __getstate__ (self):
+
+                ''' get state for pickling '''
+
+                return self.__dict__
+
+        def __setstate__ (self, d):
+
+                ''' set state for pickling '''
+
+                self.__dict__ = d
+                
         def __call__ (self, arg):
+                
                 ''' Return user's input of a given arg
 
                     :type   arg: a string
@@ -255,6 +268,7 @@ class Info (object):
 
                     :return: the values of user's input
                 '''
+                
                 if arg not in self._inputs:
                         message = 'misc:Info :: '+arg+' not registered as users inputs'
                         raise InvalidArgements (message)
@@ -304,7 +318,8 @@ class Info (object):
 
                 ''' get datatypes from input neutrinos / backgrounds '''
 
-                return np.concatenate ((self._inputs ['neutrinos'], self._inputs ['backgrounds']))
+                return np.concatenate ((self._inputs ['neutrinos'],
+                                        self._inputs ['backgrounds']))
         
         def _check_info (self):
 
@@ -349,6 +364,18 @@ class Toolbox (object):
         def __init__ (self):
 
                 ''' Initialize a toolbox '''
+
+        def __getstate__ (self):
+
+                ''' get state for pickling '''
+
+                return self.__dict__
+
+        def __setstate__ (self, d):
+
+                ''' set state for pickling '''
+
+                self.__dict__ = d
 
         def is_number (self, var):
 
@@ -421,24 +448,3 @@ class Toolbox (object):
                         cdict[key][skey] = self.merge ([ d[key][skey] for d in [d1, d2, d3] if d ])
             return cdict
 
-###########################################################################
-##### a cleverPickler class for pickling complex nested instances
-###########################################################################
-class CleverPickler (object):
-
-        ''' a smart pickler that convert complex instances into
-            picklable objects '''
-
-        def __init__ (self, *contents):
-
-                ''' initialize clever pickler 
-
-                    :type  contents: arguments
-                    :param contents: list of contents to be pickled
-                '''
-
-                self.contents = contents
-
-        #def __getstate__ (self):
-        #        def normalize (content):
-        #                if type (content) == types.FileType 

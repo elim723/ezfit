@@ -36,7 +36,7 @@ from likelihood import Likelihood
 ####################################################################
 #### Template class
 ####################################################################
-class template (object):
+class Template (object):
 
     ''' A class to create an object with MC template and data
         histogram.
@@ -46,8 +46,8 @@ class template (object):
 
         ''' initialize template class '''
         
-        print ('#### ####################################################')
-        print ('#### ############## Generate Template  ##################')
+        print ('#### ##################################################')
+        print ('#### ############# Generate Template  #################')
         print ('####')
 
         ###################################################
@@ -64,7 +64,7 @@ class template (object):
         ###################################################
         #### collect constants
         ###################################################
-        params    = self.nuparams.extract_params ('seeded_mc')
+        params    = self.nuparams.extract_params ('seeded')
         datatypes = self.info.get_datatypes ()
         outfile   = self.info ('outfile')
         
@@ -75,7 +75,6 @@ class template (object):
         print ('####')
         lib, bhistos = self.get_baseline_histograms (datatypes, params)
         self.bhistos = bhistos
-        self.weighters = lib.weighters
         self.probmaps = lib.probmaps
         self._print_rates ('baseline', bhistos)
 
@@ -84,7 +83,7 @@ class template (object):
         ######################################################
         print ('#### Getting hyperplane objects ...')
         print ('####')
-        self.hplanes = lib.get_hplanes (self.nuparams,
+        self.hplanes = lib.get_hplanes (self.nuparams, params,
                                         verbose=self.info ('verbose'))
         
         ###################################################
@@ -92,7 +91,9 @@ class template (object):
         ###################################################
         print ('#### Getting MC template ...')
         print ('####')
-        mhistos, template, variance = self.get_template (datatypes, params, lib, bhistos)
+        mhistos, template, variance = self.get_template (datatypes,
+                                                         params, lib,
+                                                         bhistos, self.hplanes)
         self.mhistos = mhistos
         self._print_rates ('hplaned', mhistos)
         self.template = {'H':template, 'H2':variance}
@@ -103,7 +104,7 @@ class template (object):
         ###################################################
         print ('#### Getting data histogram ...')
         print ('####')
-        template, variance = self.get_data (params)
+        template, variance = self.get_data (datatypes, params)
         self.dhisto = Map ({'H':template, 'H2':variance})
         self._print_rates ('data', self.dhisto)
         
@@ -112,12 +113,25 @@ class template (object):
         ###################################################
         print ('#### Evaluating chi2 out of the box ...')
         print ('####')
-        LH = Likelihood (self.mhistos, self.dhisto,
-                         'modchi2', verbose=self.info ('verbose') )
+        LH = Likelihood (self.dhisto, 'modchi2',
+                         verbose=self.info ('verbose') )
+        LH.set_histos (self.mhistos)
         ts, bints, As = LH.get_ts ()
         print ('#### modified chi2: {0}'.format (2*ts))
-        print ('#### ####################################################')
+        print ('#### ################################################')
 
+    def __getstate__ (self):
+
+        ''' get state for pickling '''
+        
+        return self.__dict__
+
+    def __setstate__ (self, d):
+
+        ''' set state for pickling '''
+
+        self.__dict__ = d
+    
     def get_baseline_histograms (self, dtypes, params):
 
         ''' obtain all baseline histograms for all data types
@@ -144,7 +158,7 @@ class template (object):
         bhistos = lib.collect_base_histograms (params)
         return lib, bhistos
     
-    def get_template (self, dtypes, params, lib, histos):
+    def get_template (self, dtypes, params, lib, histos, hplanes):
 
         ''' obtain a template from all data types
 
@@ -160,6 +174,9 @@ class template (object):
             :type  histos: a dictionary
             :param histos: baseline histograms from all members
 
+            :type  hplanes: a HyperPlane object
+            :param hplanes: hyperplane
+
             :return mhistos: a dictionary
                     mhistos: modified histogram from hyperplane
 
@@ -170,21 +187,22 @@ class template (object):
                     var: variance of MC template
         '''
         
-        mhistos = lib.apply_hplanes (histos,
-                                     self.hplanes,
-                                     params)
-        
+        mhistos = lib.apply_hplanes (histos, hplanes, params)
+
         ### sum up histograms and variances
         mc = np.array (sum ([ mhistos[dtype]['H'] for dtype in dtypes ]))
         var = np.array (sum ([ mhistos[dtype]['H2'] for dtype in dtypes ]))
         return mhistos, mc, var
         
-    def get_data (self, params):
+    def get_data (self, datatypes, params):
 
         ''' obtain data histogram
 
             :type  params: dictionary
             :param params: values of floating parameters
+
+            :type  datatypes: a list / array 
+            :param datatypes: name of data types involved
 
             :retrun H: a multi-dimensional array
                     H: data histogram
@@ -200,12 +218,15 @@ class template (object):
             return data.get_histogram (self.info.get_edges (), weights=w)
         elif self.nuparams.diff_injected_seeded ():
             ## get injdected parameters
-            params    = self.nuparams.extract_params ('injected_data')
+            params    = self.nuparams.extract_params ('injected')
             ## library and baseline histograms from the injected param
             lib, bhistos = self.get_baseline_histograms (datatypes, params)
-            ## same hyperplane
+            ## hyperplane
+            #hplanes = lib.get_hplanes (self.nuparams, params,
+            #                           verbose=self.info ('verbose'))            
             ## get template with injected data
-            return self.get_template (datatypes, params, lib, bhistos)
+            mhisto, H, H2 = self.get_template (datatypes, params, lib, bhistos, self.hplanes)
+            return H, H2
         
         return self.template['H'], self.template['H2']
 

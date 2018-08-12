@@ -122,6 +122,19 @@ class ProbMap (object):
             if param in default_params:
                 oscparams[param] = params [param]
         return oscparams
+
+    def __getstate__ (self):
+
+        ''' get state for pickling '''
+
+        return self.__dict__
+
+    def __setstate__ (self, d):
+
+        ''' set state for pickling '''
+
+        self.__dict__ = d
+    
     
     def _check_args (self, params):
 

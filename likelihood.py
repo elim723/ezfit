@@ -34,14 +34,10 @@ class Likelihood (object):
         calculation. One can pick between regular / modified
         chi2 or poisson / barlow LLH. '''
     
-    def __init__ (self, histos, dhisto, method, verbose=1):
+    def __init__ (self, dhisto, method, verbose=1):
 
         ''' initialize likelihood object
         
-            :type  histos: dictionary
-            :param histos: {'numucc': {'H':[], 'H2':[]},
-                            'nuecc' : {'H':[], 'H2':[]}, ...}
-
             :type  dhisto: dictionary
             :param dhisto: data histogram {'H':[], 'H2':[]}
 
@@ -51,31 +47,40 @@ class Likelihood (object):
             :type  verbose: int
             :param verbose: If 0, no print out
                             If 1, basic print out
-                            If 2, detailed print out
+                            If 4, detailed print out per bin
         '''
         
-        self._histos = histos
         self._dhisto = dhisto
         self._method = method
         self._verbose = verbose
         self._check_args ()
 
-        self._shape, self._nbins, self._dtypes = self._set_params ()
-        ## change self._histos from dictionary to flattened numpy array
-        self._ohistos, self._vhistos = self._order_histos (self._histos)
+        self._shape, self._nbins = self._set_params ()
         self._dhisto = Map ({ 'H':self._dhisto.H.flatten (),
                               'H2':self._dhisto.H2.flatten () })
 
+    def __getstate__ (self):
+
+        ''' get state for pickling '''
+
+        return self.__dict__
+
+    def __setstate__ (self, d):
+
+        ''' set state for pickling '''
+
+        self.__dict__ = d
+
+        
     def _check_args (self):
 
         ''' check user's input '''
 
         head = 'Likelihood:check_args :: '
-        ## histos and dhisto are dictionaries
-        for arg in ['histos', 'dhisto']:
-            if not toolbox.is_dict (eval ('self._'+arg)):
-                message = head+arg+' must be a dictionary.'
-                raise InvalidArguments (message)
+        ## dhisto are dictionaries
+        if not toolbox.is_dict (self._dhisto):
+            message = head+'dhisto must be a dictionary.'
+            raise InvalidArguments (message)
 
         ## verbose must be int
         if not isinstance (self._verbose, int):
@@ -92,6 +97,16 @@ class Likelihood (object):
             message = head+'method must be either chi2 / modchi2 / poisson / barlow.'
             raise InvalidArguments (message)
 
+    def _check_histos_args (self, histos):
+
+        ''' check user's histos inputs '''
+        
+        head = 'Likelihood:check_histos_args :: '
+        ## histos: weighted histos dictionary
+        if not toolbox.is_dict (histos):
+            message = head+'histos must be a dictionary.'
+            raise InvalidArguments (message)
+        
     def _check_barlow_args (self, unhistos, norms):
 
         ''' check user's barlow inputs '''
@@ -104,6 +119,167 @@ class Likelihood (object):
                 message = head+arg+' must be a dictionary.'
                 raise InvalidArguments (message)
         
+    def _print_header (self, shape, nbins):
+        
+        ''' print header
+        
+            :type  shape: tuple
+            :param shape: histogram shape
+
+            :type  nbins: int
+            :param nbins: total number of bins of histogram
+        '''
+
+        print ('#### ##################################################')
+        print ('#### ############### Likelihood Set up ################')
+        print ('####')
+        if self._verbose > 1:
+            print ('#### histogram info : {0} ({1})'.format (shape, nbins))
+        
+    def _print_info (self, histos, shape):
+
+        ''' print bin information
+
+            :type  histos: dictionary
+            :param histos: {'numucc': {'H':[], 'H2':[]},
+                            'nuecc' : {'H':[], 'H2':[]}, ...}
+
+            :type  shape: tuple
+            :param shape: histogram shape
+        '''
+
+        print ('#### data types included ({0}): {1}'.format (len (histos), histos.keys ()))
+        print ('#### MC / data content:')
+        print ('#### {0}'.format ('-'*88))
+        totalmc = self._get_totalmc (histos)
+        ### print every four bins per print out line
+        for i in np.arange (len (totalmc.H.flatten ())/bins_line):
+            info = self._get_bininfo (i, totalmc, shape)
+            # print each four bins
+            self._print_bin (info)
+            print ('#### {0}'.format ('-'*88))
+        print ('####')
+
+    def _print_bin (self, info):
+
+        ''' print the bin information 
+
+            :type  info: a dictionary
+            :param info: information of the bins in bins_line
+        '''
+            
+        line1, line2, line3 = '#### ', '#### ', '#### '
+        for i in np.arange (bins_line):
+            line1 += '{'+str(i*2)+':3}th {'+str(i*2+1)+'}' + ' '*6 + '|'
+            line2 += 'mc: {'+str(i*2)+':6.1f}; d: {'+str(i*2+1)+':6.1f}|'
+            line3 += 'chi2: {'+str(i)+':7.2f}' + ' '*8 + '|'
+        print (line1.format (info['nbin'][0], info['index'][0],
+                             info['nbin'][1], info['index'][1],
+                             info['nbin'][2], info['index'][2],
+                             info['nbin'][3], info['index'][3] ))
+        print (line2.format (info['mc'][0], info['data'][0],
+                             info['mc'][1], info['data'][1],
+                             info['mc'][2], info['data'][2],
+                             info['mc'][3], info['data'][3] ))
+        print (line3.format (info['chi2'][0], info['chi2'][1],
+                             info['chi2'][2], info['chi2'][3]))
+
+    def _print_barlow (self):
+        
+        ''' print initial barlow setting '''
+        
+        print ('#### init ps: {0}'.format(self._ps))
+        print ('#### init norms: {0}'.format(self._norms))
+        if self._verbose > 3:
+            line = '#### N{0}, init weighted, init meanw * A {0}: {1}, {2}, {3}'
+            for j in np.arange (len (self._dtypes)):
+                print (line.format(j, self._Nj[j], np.sum (self._ohistos[j]),
+                                   np.sum (self._meanw[j] * self._unohistos[j]) ))
+        
+    def _set_params (self):
+
+        ''' set internal parameters and print info
+        
+            :return shape: tuple
+                    shape: histogram shape
+            
+            :return nbins: int
+                    nbins: total number of bins of histogram
+        '''
+        
+        shape = self._dhisto.H.shape
+        nbins = len (self._dhisto.H.flatten())
+        self._print_header (shape, nbins)
+        return shape, nbins
+
+    def set_histos (self, histos):
+
+        ''' set the current histograms from all data types
+        
+            :type  histos: dictionary
+            :param histos: {'numucc': {'H':[], 'H2':[]},
+                            'nuecc' : {'H':[], 'H2':[]}, ...}
+        '''
+
+        self._check_histos_args (histos)
+        ## change self._histos from dictionary to flattened numpy array
+        self._histos = histos
+        self._dtypes = sorted ([ dtype for dtype in self._histos ])
+        self._ohistos, self._vhistos = self._order_histos (self._histos)
+        if self._verbose > 3: self._print_info (histos, self._shape)
+        
+    def set_barlow (self, unhistos, norms):
+
+        ''' set unweighted histograms for barlow
+
+            :type  unhistos: dictionary
+            :param unhistos: unweighted histograms {'numucc': {'H':[], 'H2':[]},
+                                                    'nuecc' : {'H':[], 'H2':[]},
+                                                    ...}
+
+            :type   norm: a dictionary
+            :param  norm: normalization factors {'numucc':x, 'nuecc':x,
+                                                 'nutaucc':x, ...}
+        '''
+
+        self._check_barlow_args (unhistos, norms)
+
+        ## change self._unhistos/self._norms from dictionary to numpy array
+        self._unohistos, self._unvhistos = self._order_histos (unhistos)
+        self._norms = np.array ([ norms[dtype] for dtype in self._dtypes ])
+
+        ## these variables are based on barlow paper
+        self._Nj = np.array ([ np.sum (self._ohistos[j] / self._norms[j])
+                               for j in np.arange (self._ndtypes) ]).astype (float)
+        self._ps = np.array ([ self._norms[j] * np.sum (self._ohistos[j]) / self._Nj[j]
+                               for j in np.arange (self._ndtypes) ])
+        self._meanw = self._get_meanw ()
+
+        ## print init info
+        if self._verbose > 3: self._print_barlow ()
+        return
+
+    def _order_histos (self, histos):
+
+        ''' order histograms in order of self._dtypes
+
+            :type  histos: dictionary
+            :param histos: {'numucc': {'H':[], 'H2':[]},
+                            'nuecc' : {'H':[], 'H2':[]}, ...}
+
+            :return  ohistos: a multi-dimensional array
+                     ohistos: flattened histograms in order of self._dtypes
+
+            :return  vhistos: a multi-dimensional array
+                     vhistos: flattened variances in order of self._dtypes
+        '''
+
+        ohistos, vhistos = [], []
+        for dtype in self._dtypes:
+            ohistos.append (histos[dtype]['H'].flatten ())
+            vhistos.append (histos[dtype]['H2'].flatten ())
+        return np.array (ohistos), np.array (vhistos)
+    
     def _get_bininfo (self, index, totalmc, shape):
         
         ''' obtain informations from every four bins_line
@@ -123,113 +299,22 @@ class Likelihood (object):
 
         # get information about these four bins
         info = {'nbin':[], 'index':[], 'mc':[], 'data':[], 'chi2':[]}
-        nbins = np.linspace (index*bins_line, index*bins_line+bins_line-1, bins_line)
+        nbins = np.linspace (index*bins_line,
+                             index*bins_line+bins_line-1,
+                             bins_line).astype (int)
         for nbin in nbins:
             index = np.unravel_index (nbin, shape)
-            mc, data = totalmc['H'][nbin], self._dhisto['H'][nbin]
-            mc2, data2 = totalmc['H2'][nbin], self._dhisto['H2'][nbin]
+            mc   = totalmc.H.flatten ()[nbin]
+            mc2  = totalmc.H2.flatten ()[nbin]
+            data, data2 = self._dhisto.H[nbin], self._dhisto.H2[nbin]
             chi2 = (mc - data)**2 / (mc2 + data2)
             info['nbin'].append (nbin)
             info['index'].append (index)
-            info['mc'].append (np.round (mc, 1))
-            info['data'].append (np.round (data, 1))
-            info['chi2'].append (np.round (chi2, 2))
+            info['mc'].append (round (mc, 1))
+            info['data'].append (round (data, 1))
+            info['chi2'].append (round (chi2, 2))
         return info
-        
-    def _print_header (self, shape, nbins, dtypes):
-        
-        ''' print header
-        
-            :type  shape: tuple
-            :param shape: histogram shape
-
-            :type  nbins: int
-            :param nbins: total number of bins of histogram
-
-            :type  ndtypes: int
-            :param ndtypes: number of data types 
-        '''
-
-        print ('#### ####################################################')
-        print ('#### ################ Likelihood Set up #################')
-        print ('#### histogram info : {0} ({1})'.format (shape, nbins))
-        print ('#### data types included ({0}): {1}'.format (len (dtypes), dtypes))
-        if self._verbose > 1: self._print_info (self._histos, shape)
-        
-    def _print_info (self, histos, shape):
-
-        ''' print bin information
-
-            :type  histos: dictionary
-            :param histos: {'numucc': {'H':[], 'H2':[]},
-                            'nuecc' : {'H':[], 'H2':[]}, ...}
-
-            :type  shape: tuple
-            :param shape: histogram shape
-        '''
-        
-        print ('#### MC / data content:')
-        print ('#### {0}'.format ('-'*80))
-        totalmc = self._get_totalmc (histos)
-        ### print every four bins per print out line
-        for i in np.arange (len (hist)/bins_line):
-            info = self._get_bininfo (i, totalmc, shape)
-            # print each four bins
-            self._print_lines (info)
-            print ('#### {0}'.format ('-'*80))
-        print ('####')
-
-    def _print_bin (self, info):
-
-        ''' print the bin information 
-
-            :type  info: a dictionary
-            :param info: information of the bins in bins_line
-        '''
-            
-        line1, line2, line3 = '#### ', '#### ', '#### '
-        for i in np.arange (bins_line):
-            line1 += '{'+str(i*2)+'}th {'+str(i*2+1)+'}' + ' '*5 + '|'
-            line2 += 'mc: {'+str(i*2)+':1f}; d: {'+str(i*2+1)+':1f}' + ' '*3 + '|'
-            line3 += 'chi2: {'+str(i)+':2f}' + ' '*6 + '|'
-        print (line1.format (info['nbin'][0], info['index'][0], info['nbin'][1], info['index'][1],
-                             info['nbin'][2], info['index'][2], info['nbin'][3], info['index'][3] ))
-        print (line2.format (info['mc'][0], info['data'][0], info['mc'][1], info['data'][1],
-                             info['mc'][2], info['data'][2], info['mc'][3], info['data'][3] ))
-        print (line3.format (info['chi2'][0], info['chi2'][1], info['chi2'][2], info['chi2'][3]))
-
-    def _print_barlow (self):
-        
-        ''' print initial barlow setting '''
-        
-        print ('#### init ps: {0}'.format(self._ps))
-        print ('#### init norms: {0}'.format(self._norms))
-        if self._verbose > 1:
-            line = '#### N{0}, init weighted, init meanw * A {0}: {1}, {2}, {3}'
-            for j in np.arange (len (self._dtypes)):
-                print (line.format(j, self._Nj[j], np.sum (self._ohistos[j]),
-                                   np.sum (self._meanw[j] * self._unohistos[j]) ))
-        
-    def _set_params (self):
-
-        ''' set internal parameters and print info
-        
-            :return shape: tuple
-                    shape: histogram shape
-            
-            :return nbins: int
-                    nbins: total number of bins of histogram
-
-            :return ndtypes: int
-                    ndtypes: number of data types
-        '''
-        
-        shape = self._dhisto.H.shape
-        nbins = len (self._dhisto.H.flatten())
-        dtypes = sorted ([ dtype for dtype in self._histos ])
-        if self._verbose > 0: self._print_header (shape, nbins, dtypes)
-        return shape, nbins, dtypes
-
+    
     def _get_meanw (self):
 
         ''' get averaged mean weights per bin
@@ -255,35 +340,6 @@ class Likelihood (object):
                 weighted_unweighted[j][indicies] = np.min (m)
         return weighted_unweighted
 
-    def set_barlow (self, unhistos, norms):
-
-        ''' set unweighted histograms for barlow
-
-            :type  unhistos: dictionary
-            :param unhistos: unweighted histograms {'numucc': {'H':[], 'H2':[]},
-                                                    'nuecc' : {'H':[], 'H2':[]}, ...}
-
-            :type   norm: a dictionary
-            :param  norm: normalization factors {'numucc':x, 'nuecc':x, 'nutaucc':x, ...}
-        '''
-
-        self._check_barlow_args (unhistos, norms)
-
-        ## change self._unhistos/self._norms from dictionary to numpy array
-        self._unohistos, self._unvhistos = self._order_histos (unhistos)
-        self._norms = np.array ([ norms[dtype] for dtype in self._dtypes ])
-
-        ## these variables are based on barlow paper
-        self._Nj = np.array ([ np.sum (self._ohistos[j] / self._norms[j])
-                               for j in np.arange (self._ndtypes) ]).astype (float)
-        self._ps = np.array ([ self._norms[j] * np.sum (self._ohistos[j]) / self._Nj[j]
-                               for j in np.arange (self._ndtypes) ])
-        self._meanw = self._get_meanw ()
-
-        ## print init info
-        if self._verbose > 0: self._print_barlow ()
-        return
-
     def _get_totalmc (self, histos):
 
         ''' get total mc from histograms of all data types
@@ -302,27 +358,6 @@ class Likelihood (object):
             mc['H2'] += histos[dtype]['H2']
         return mc
                         
-    def _order_histos (self, histos):
-
-        ''' order histograms in order of self._dtypes
-
-            :type  histos: dictionary
-            :param histos: {'numucc': {'H':[], 'H2':[]},
-                            'nuecc' : {'H':[], 'H2':[]}, ...}
-
-            :return  ohistos: a multi-dimensional array
-                     ohistos: flattened histograms in order of self._dtypes
-
-            :return  vhistos: a multi-dimensional array
-                     vhistos: flattened variances in order of self._dtypes
-        '''
-
-        ohistos, vhistos = [], []
-        for dtype in self._dtypes:
-            ohistos.append (histos[dtype]['H'].flatten ())
-            vhistos.append (histos[dtype]['H2'].flatten ())
-        return np.array (ohistos), np.array (vhistos)
-    
     def get_ts (self):
 
         ''' calculate ts values from all bins
@@ -342,7 +377,8 @@ class Likelihood (object):
         isbarlow = True if 'barlow' in self._method else False
         As = None 
         if isbarlow:
-            if any ([ self._ps[j]<0 for j in np.arange (len (self._dtypes)) ]): return 1e10
+            if any ([ self._ps[j]<0 for j in np.arange (len (self._dtypes)) ]):
+                return 1e10
             As = np.empty (self._unohistos) 
 
         ## loop through each bin
@@ -373,11 +409,13 @@ class Likelihood (object):
         ## info of this bin
         index = np.unravel_index (nbin, self._shape)
         di = self._dhisto.H[nbin]
-        fi = np.sum ([ self._ohistos[j][nbin] for j in np.arange (len (self._dtypes)) ])
+        fi = np.sum ([ self._ohistos[j][nbin]
+                       for j in np.arange (len (self._dtypes)) ])
 
         ## print info
-        if self._verbose > 1: 
-            print ('#### +----------- {0}th bin ({1}) -----------+'.format(nbin, index))
+        if self._verbose > 3: 
+            print ('#### +----------- {0}th bin ({1}) -----------+'.format (nbin,
+                                                                            index))
             print ('#### +---- di, mci: {0}, {1}'.format(di, fi))
         
         ## determine TS
@@ -390,7 +428,7 @@ class Likelihood (object):
             ts, An = self._calculate_llh (nbin, index, di, fi)
         
         ## print info
-        if self._verbose > 1: 
+        if self._verbose > 3: 
             print ('#### +---- {0}: {1}'.format (self._method, 2*ts))
 
         return ts, An
@@ -416,7 +454,8 @@ class Likelihood (object):
         if fi==0: return 0.0
         if 'modchi2' in self._method:
             ## collect total variance from all data types
-            vfi = np.sum ([ self._vhistos[j][nbin] for j in np.arange (len (self._dtypes)) ])
+            vfi = np.sum ([ self._vhistos[j][nbin]
+                            for j in np.arange (len (self._dtypes)) ])
             return 0.5 * (fi - di)**2 / (fi + vfi) 
         return 0.5 * (fi - di)**2 / fi 
 
@@ -472,7 +511,8 @@ class Likelihood (object):
 
         ## ai = unweighted counts in this bins from all data types
         ## wi = mean weights in this bins from all data types
-        ai = np.array ([ self._unohistos[j][nbin] for j in np.arange (self._dtypes) ])
+        ai = np.array ([ self._unohistos[j][nbin]
+                         for j in np.arange (self._dtypes) ])
         wi = np.array ([ self._meanw[j][nbin] for j in np.arange (self._dtypes) ])
 
         ## solve for ti (a scalar)
@@ -483,7 +523,8 @@ class Likelihood (object):
         ti, Ai = self._barlow_solve_Ai (ai, wi, ti)
 
         ## solve for fi for this ith bin (fi = a scalar)
-        fi = np.sum ([ self._ps[j]*wi[j]*Ai[j] for j in np.arange (len (self._dtypes)) ])
+        fi = np.sum ([ self._ps[j]*wi[j]*Ai[j]
+                       for j in np.arange (len (self._dtypes)) ])
 
         ## evaluate barlow LLH
         llh = 0
@@ -497,7 +538,7 @@ class Likelihood (object):
                 llh -= ai[j] * np.log (ai[j]) - ai[j]
 
         # print penalty
-        if self._verbose > 1: self._print_barlow_penalty (ai, Ai)
+        if self._verbose > 3: self._print_barlow_penalty (ai, Ai)
                 
         return -llh, Ai
 
@@ -518,7 +559,8 @@ class Likelihood (object):
         print ('#### +----  dtype |    ai    |    Ai    |  penalty  |')
         for j in np.arange (len (self._dtypes)):
             line = '#### +---- {0:6} | {1:8} | {2:8} | {3:9} |'
-            penalty = (ai[j]*np.log (Ai[j]) - Ai[j]) - (ai[j] * np.log (ai[j]) - ai[j])
+            penalty = (ai[j]*np.log (Ai[j]) - Ai[j]) - \
+                      (ai[j] * np.log (ai[j]) - ai[j])
             print (line.format (j, np.round (ai[j],4), np.round (Ai[j], 4),
                                 np.round (penalty, 2) ))
     
@@ -541,19 +583,22 @@ class Likelihood (object):
         '''
 
         ## solve ti
-        ti_func = lambda ti: di / (1-ti) - np.sum ([ self._ps[j]*ai[j]*wi[j] / (1+self._ps[j]*wi[j]*ti)
-                                                     for j in np.arange (len (self._dtypes)) ])
+        ti_func = lambda ti: di / (1-ti) - \
+                  np.sum ([ self._ps[j]*ai[j]*wi[j] / (1+self._ps[j]*wi[j]*ti)
+                            for j in np.arange (len (self._dtypes)) ])
         ti = fsolve (ti_func, 0) [0]
 
         ## print info
-        if self._verbose > 1:
+        if self._verbose > 3:
             print ('#### +---- current ps       : {0}'.format (self._ps))
             print ('#### +---- current norms    : {0}'.format (self._norms))
-            w = np.array ([ self._ohistos[j][nbin] for j in np.arange (len (self._dtypes)) ])
+            w = np.array ([ self._ohistos[j][nbin]
+                            for j in np.arange (len (self._dtypes)) ])
             print ('#### +---- weighted counts  : {0}'.format (w))
             print ('#### +---- unweighted counts: {0}'.format (ai))
             print ('#### +---- mean weight      : {0}'.format (wi))
-            print ('#### +---- ti               : {0} ({1})'.format (ti, ti_func (ti)))
+            print ('#### +---- ti               : {0} ({1})'.format (ti,
+                                                                     ti_func (ti)))
 
         ## check value of ti 
         return self._barlow_check_ti (ti, wi)
@@ -574,16 +619,18 @@ class Likelihood (object):
         '''
         
         ## apply boundary conditions to ti according to the paper
-        max_pw = max ([ self._ps[j]*wi[j] for j in np.arange (len (self._dtypes)) ])
+        max_pw = max ([ self._ps[j]*wi[j]
+                        for j in np.arange (len (self._dtypes)) ])
         lowest_ti = -1. / max_pw
         if ti < lowest_ti:
             ## replace ti to the lowest possible value
             ti = lowest_ti
             ## print new info
-            if self._verbose > 1:
+            if self._verbose > 3:
                 print ('#### +---- ** max p*w       : {0}'.format (max_pw))
                 print ('#### +---- ** max lowest ti : {0}'.format (lowest_ti))
-                print ('#### +---- ** new ti        : {0} ({1})'.format (ti, ti_func (ti)))
+                print ('#### +---- ** new ti        : {0} ({1})'.format (ti,
+                                                                         ti_func (ti)))
         return ti
 
     def _barlow_solve_Ai (self, ai, wi, ti):
@@ -607,8 +654,9 @@ class Likelihood (object):
         '''
 
         ## Eq. 20 in Barlow's paper
-        Ai = np.array ([ ai[j] / (1+self._ps[j]*wi[j]*ti) for j in np.arange (len (self._dtypes)) ])
-        if self._verbose > 1: print ('#### +---- Ai               : {0}'.format (Ai))
+        Ai = np.array ([ ai[j] / (1+self._ps[j]*wi[j]*ti)
+                         for j in np.arange (len (self._dtypes)) ])
+        if self._verbose > 3: print ('#### +---- Ai               : {0}'.format (Ai))
         ## look for special case (Eq. 20 in Barlow's paper)
         ks = [ j for j in np.arange (len (self._dtypes)) if ai[j]==0. and Ai[j]>0. ]
         ## check for special case
@@ -652,7 +700,7 @@ class Likelihood (object):
         # update ti
         ti = -1./pk
         # print info
-        if self._verbose > 1:
+        if self._verbose > 3:
             print ('#### +---- ** SPECIAL Ai[j] > 0 && ai[j] == 0 CASE !')
             print ('#### +---- ** ks            : {0}'.format (ks))
             print ('#### +---- ** pk, maxk      : {0}, {1}'.format (pk, maxk))
@@ -664,13 +712,16 @@ class Likelihood (object):
         # update Ai with updated ti (Eq. 22 in Barlow's paper)
         for j in np.arange (len (self._dtypes)):
             if j == maxk:
-                newA = di / (1+pk) - np.sum ([ self._ps[m]*wi[m]*ai[m] / (pk-self._ps[m]*wi[m])
-                                               for m in np.arange (len (self._dtypes)) if not m==j ])
+                newA = di / (1+pk) - np.sum ([ self._ps[m]*wi[m]*ai[m] / 
+                                               (pk-self._ps[m]*wi[m])
+                                               for m in np.arange (len (self._dtypes))
+                                               if not m==j ])
             else:
                 newA = ai[j] / (1+self._ps[j]*wi[j]*ti)
-            if self._verbose > 1: print ('#### +----  {0:5} |  {1:9} | {2:8} |'.format (j, Ai[j], newA))
+            if self._verbose > 3:
+                print ('#### +----  {0:5} |  {1:9} | {2:8} |'.format (j, Ai[j], newA))
             Ai[j] = newA
-        if self._verbose > 1:
+        if self._verbose > 3:
             print ('#### +++++++++++++++++++++++++++++++++++++')
             print ('#### +---- ** updated Ai    : {0}'.format (Ai))
         return ti, Ai

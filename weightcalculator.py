@@ -58,6 +58,18 @@ class WeightCalculator (object):
                         ## initialize info to store previous values
                         self._info     = {}
 
+            def __getstate__ (self):
+
+                        ''' get state for pickling '''
+
+                        return self.__dict__
+
+            def __setstate__ (self, d):
+                                    
+                        ''' set state for pickling '''
+
+                        self.__dict__ = d
+
             def _check_args (self):
 
                         ''' check user's input arguments '''
@@ -193,8 +205,10 @@ class MuonWeighter (WeightCalculator):
                         for param in ['muon_flux', 'norm_corsika']:
                                     self._update (param, params[param])
                                     if self._info [param]['update']:
-                                                factor = params['norm_corsika'] if param == 'norm_corsika' else \
-                                                         1 + params['muon_flux'] * self._muflux (self._events.mc.cz)
+                                                factor = params['norm_corsika'] \
+                                                         if param == 'norm_corsika' else \
+                                                         1 + params['muon_flux'] * \
+                                                         self._muflux (self._events.mc.cz)
                                                 self._info [param]['factor'] = factor                        
                         ## get spe factor
                         self._get_spe_factor (params, weights)
@@ -403,14 +417,19 @@ class NeutrinoWeighter (WeightCalculator):
                         e, pdg = self._events.mc.e, self._events.mc.pdg
                         misc = self._events.misc
                         
-                        self._isnugen = np.array (misc.isnugen) if misc.has_key ('isnugen') else np.zeros (len (e)).astype (bool)
-                        self._isnugenHE = np.logical_and (e>=5000., np.array (misc.isnugen)) if misc.has_key ('isnugen') else \
+                        self._isnugen = np.array (misc.isnugen) \
+                                        if misc.has_key ('isnugen') else \
+                                           np.zeros (len (e)).astype (bool)
+                        self._isnugenHE = np.logical_and (e>=5000., np.array (misc.isnugen)) \
+                                          if misc.has_key ('isnugen') else \
                                           np.zeros (len (e)).astype (bool)
                         notnugen = ~np.logical_or (self._isnugen, self._isnugenHE)
                         self._res = np.logical_and (notnugen, np.array (misc.scattering)==2)
                         self._qe  = np.logical_and (notnugen, np.array (misc.scattering)==3)
-                        self._nu_dis    = np.logical_and (notnugen, np.logical_and (np.array (misc.scattering)==1, pdg>0))
-                        self._nubar_dis = np.logical_and (notnugen, np.logical_and (np.array (misc.scattering)==1, pdg<0))
+                        self._nu_dis    = np.logical_and (notnugen, np.logical_and
+                                                          (np.array (misc.scattering)==1, pdg>0))
+                        self._nubar_dis = np.logical_and (notnugen, np.logical_and
+                                                          (np.array (misc.scattering)==1, pdg<0))
                         
             def _get_osc_factors (self, params, e, cz, pdg):
 
@@ -450,7 +469,8 @@ class NeutrinoWeighter (WeightCalculator):
                                                             break
                                     if redoprob3:
                                                 prob = self.probmap.get_prob (e, cz, pdg, params)
-                                                self._info ['oscprob'] = {'atm_nue':prob[:,0], 'atm_numu':prob[:,1]}
+                                                self._info ['oscprob'] = {'atm_nue':prob[:,0],
+                                                                          'atm_numu':prob[:,1]}
                                                 
             def _get_flux_factors (self, params, e, cz, pdg):
 

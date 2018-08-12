@@ -83,6 +83,18 @@ class Member (object):
             self._pfile = self._get_pfile ()
             self._events = self._load_events ()
 
+        def __getstate__ (self):
+
+                ''' get state for pickling '''
+
+                return self.__dict__
+
+        def __setstate__ (self, d):
+
+                ''' set state for pickling '''
+
+                self.__dict__ = d
+            
         def get_events (self):
                 
                 ''' return event dictionary of this member '''
@@ -206,9 +218,9 @@ class Member (object):
                 boolean = np.logical_and (boolean, ddict.geo.charge_asym<0.85)
                 ### define template range cuts
                 e, z, p = np.array (ddict.reco.e), np.array (ddict.reco.z), np.array (ddict.reco.pid)
-                ecut = np.logical_and (e>self._ranges['e'][0], e<=self._ranges['e'][1])
-                zcut = np.logical_and (z>self._ranges['z'][0], z<=self._ranges['z'][1])
-                pcut = np.logical_and (p>self._ranges['p'][0], p<=self._ranges['p'][1])
+                ecut = np.logical_and (e>=self._ranges['e'][0], e<self._ranges['e'][1])
+                zcut = np.logical_and (z>=self._ranges['z'][0], z<self._ranges['z'][1])
+                pcut = np.logical_and (p>=self._ranges['p'][0], p<self._ranges['p'][1])
                 tempcut = np.logical_and (np.logical_and (ecut, zcut), pcut)
                 boolean = np.logical_and (boolean, tempcut)
                 return self.apply_cut (ddict, boolean)
@@ -330,9 +342,8 @@ class Member (object):
                 ## normalization factors
                 key = 'atmmu' if 'muon' in self._dtype else 'noise' if 'noise' in self._dtype else 'numu'
                 norm = params['norm_nutau'] if 'nutau' in self._dtype else \
-                       params['norm_nc'] if 'nc' in self._dtype else \
-                       params['norm_'+key]
-                norm *= livetime
+                       params['norm_nc'] if 'nc' in self._dtype else 1
+                norm *= params['norm_'+key] * livetime
                 
                 ## get weights
                 return norm * weighter.reweight (params)

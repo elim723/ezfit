@@ -93,7 +93,7 @@ class Template (object):
         print ('####')
         mhistos, template, variance = self.get_template (datatypes,
                                                          params, lib,
-                                                         bhistos, self.hplanes)
+                                                         bhistos)
         self.mhistos = mhistos
         self._print_rates ('hplaned', mhistos)
         self.template = {'H':template, 'H2':variance}
@@ -158,7 +158,7 @@ class Template (object):
         bhistos = lib.collect_base_histograms (params)
         return lib, bhistos
     
-    def get_template (self, dtypes, params, lib, histos, hplanes):
+    def get_template (self, dtypes, params, lib, histos):
 
         ''' obtain a template from all data types
 
@@ -174,9 +174,6 @@ class Template (object):
             :type  histos: a dictionary
             :param histos: baseline histograms from all members
 
-            :type  hplanes: a HyperPlane object
-            :param hplanes: hyperplane
-
             :return mhistos: a dictionary
                     mhistos: modified histogram from hyperplane
 
@@ -187,7 +184,7 @@ class Template (object):
                     var: variance of MC template
         '''
         
-        mhistos = lib.apply_hplanes (histos, hplanes, params)
+        mhistos = lib.apply_hplanes (histos, self.hplanes, params)
 
         ### sum up histograms and variances
         mc = np.array (sum ([ mhistos[dtype]['H'] for dtype in dtypes ]))
@@ -221,11 +218,9 @@ class Template (object):
             params    = self.nuparams.extract_params ('injected')
             ## library and baseline histograms from the injected param
             lib, bhistos = self.get_baseline_histograms (datatypes, params)
-            ## hyperplane
-            #hplanes = lib.get_hplanes (self.nuparams, params,
-            #                           verbose=self.info ('verbose'))            
+            ## same hyperplane
             ## get template with injected data
-            mhisto, H, H2 = self.get_template (datatypes, params, lib, bhistos, self.hplanes)
+            mhisto, H, H2 = self.get_template (datatypes, params, lib, bhistos)
             return H, H2
         
         return self.template['H'], self.template['H2']

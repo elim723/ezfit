@@ -96,7 +96,6 @@ class Library (object):
                 self._ranges = ranges
                 self._edges = edges
                 self._pdictpath = pdictpath
-                self._check_args ()
                 
                 ## a library must have baseline sets
                 self._baseline = self._collect_base_members ()
@@ -122,39 +121,6 @@ class Library (object):
                         raise InvalidArguments (message)
                 
                 return self._baseline [dtype]
-
-        def _check_dtype (self, fname, dtypes):
-
-                ''' check dtype type and valid
-
-                    :type  fname: string
-                    :param fname: function name that calls _check_dtype
-
-                    :type  dtype: a list
-                    :param dtype: name to be checked
-                '''
-
-                if not toolbox.is_array (dtypes):
-                        message = 'Library:'+fname+' :: dtypes must be a list / array.'
-                        raise InvalidArguments (message)
-                
-                for dtype in dtypes:
-                        if not dtype in datatypes:
-                                message = 'Library:'+fname+' :: '+dtype+' not registed as data types.'
-                                raise InvalidArguments (message)
-                
-        def _check_args (self):
-
-                ''' check argument inputs '''
-
-                ## check data types
-                self._check_dtype ('check_args', self._dtypes)
-                ## check dictionaries
-                for arg in ['ranges', 'edges']:
-                        if not toolbox.is_dict (eval ('self._' + arg)):
-                                message = 'Library:check_args :: '+arg+' must be a dictionary/'
-                                raise InvalidArguments (message)
-                return
 
         def _check_setid (self, fname, dtype, dictionary, setid, default):
 
@@ -530,7 +496,7 @@ class Library (object):
                                                    matter=matter, oscnc=oscnc)
                 return histos
 
-        def get_hplanes (self, nuparams, params, matter=True, oscnc=False, verbose=1):
+        def get_hplanes (self, nuparams, matter=True, oscnc=False, verbose=1):
 
                 ''' collect hyperplane objects from all data types
                     Note: hyperplanes are based upon systematic histograms
@@ -541,9 +507,6 @@ class Library (object):
 
                     :type   nuparams: a Nuparams object
                     :param  nuparams: user settings of floating parameters
-
-                    :type   params: a dictionary
-                    :param  params: parameters used for hyperplane
 
                     :type    matter: boolean
                     :param   matter: if True, include matter effect
@@ -561,7 +524,7 @@ class Library (object):
                 '''
                 
                 ## collect systematic histograms
-                #params = nuparams.extract_params ('seeded')
+                params = nuparams.extract_params ('seeded')
                 ## only for neutrinos and muons
                 dtypes = [ dtype for dtype in self._dtypes if dtype[:2] in ['nu', 'mu'] ]
                 ## collect systematic information

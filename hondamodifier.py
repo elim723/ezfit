@@ -56,15 +56,6 @@ class HondaModifier (object):
                         ''' set state for pickling '''
                         
                         self.__dict__ = d
-                              
-            def _check_args (self):
-                        
-                        ''' check user's input arguments '''
-                        
-                        for arg in ['q_nch', 'w', 'bins']:
-                                    if not Toolbox.is_array (eval ('self._'+arg)):
-                                                message = 'SPECorr:check_args :: '+arg+' must be a 1D array.'
-                                                raise InvalidArguments (message)
                         
             def _norm_fcn (self, x, A, sigma=0.3):
 
@@ -198,7 +189,7 @@ class HondaModifier (object):
                                      output: modified factor to up-horizontal ratio
                         '''
                         ### Juan Pablo: numu up/hor modification shouldn't be anything other than 1. 
-                        if np.abs (pdg[0]) == 14: return 1 
+                        if np.abs (pdg[0]) == 14: return 1. 
 
                         A_shape = 1.*np.abs (uphor)*self._log_log_param(energy=energy, 
                                                                         y1=(self._z1max_e+self._z1max_mu),

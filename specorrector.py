@@ -51,7 +51,6 @@ class SPEPeakCorrector (object):
                         self._q_nch = np.nan_to_num (q_nch)
                         self._w     = w
                         self._bins  = bins
-                        self._check_args ()
 
                         ## perform spline fit
                         self._spline2D = self._spline ()
@@ -85,15 +84,6 @@ class SPEPeakCorrector (object):
 
                         factor = self._spline2D.ev ([percent_shift]*len(self._q_nch), self._q_nch)
                         return np.nan_to_num (factor)
-                        
-            def _check_args (self):
-                        
-                        ''' check user's input arguments '''
-                        
-                        for arg in ['q_nch', 'w', 'bins']:
-                                    if not toolbox.is_array (eval ('self._'+arg)):
-                                                message = 'SPECorr:check_args :: '+arg+' must be a 1D array.'
-                                                raise InvalidArguments (message)
                         
             def _spline (self):
 

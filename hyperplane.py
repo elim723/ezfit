@@ -74,7 +74,6 @@ class HyperPlane (object):
         self._hparams = sorted (hparams)
         self._expparams = expparams
         self._verbose = verbose
-        self._check_args ()
 
         ## set parameters
         self._default = default_mu_sysvalues if 'muon' in dtype else default_nu_sysvalues
@@ -100,41 +99,6 @@ class HyperPlane (object):
 
         self.__dict__ = d
         
-    def _check_args (self):
-
-        ''' check user's inputs '''
-
-        ## check data type
-        if not self._dtype in datatypes:
-            message = 'Member:check_args :: '+self._dtype+' not registed as data types.'
-            raise InvalidArguments (message)
-
-        ## check histos / refvalues
-        if not toolbox.is_dict (self._histos):
-            message = 'Member:check_args :: histos must be a dictionary / Map.'
-            raise InvalidArguments (message)
-
-        ## check nuparams
-        for arg in ['expparams', 'hparams']:
-            if not toolbox.is_array (eval ('self._'+arg)):
-                message = 'Member:check_args :: '+arg+' must be a list or array.'
-                raise InvalidArguments (message)
-        
-    def _check_params (self, params):
-
-        ''' check if params is dict and have all available keys '''
-
-        ## check if its a dictionary
-        if not toolbox.is_dict (params):
-            message = 'Hyperplane:check_params :: params must be a dictionary'
-            raise InvalidArguments (message)
-        
-        ## check if all parameters are available
-        for param in self._hparams:
-            if param not in params.keys ():
-                message = 'Hyperplane:check_params :: '+param+' must be in params'
-                raise InvalidArguments (message)
-
     @staticmethod
     def _print_xvalues (xvalues):
 
@@ -576,9 +540,6 @@ class HyperPlane (object):
         ## add oversizing if muon
         if 'muon' in self._dtype:
             params ['oversizing'] = 1.0
-
-        ## check params
-        self._check_params (params)
 
         ## massage parameter values
         xvalues = np.array ([ params[p] for p in self._hparams ])

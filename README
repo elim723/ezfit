@@ -8,35 +8,11 @@ To learn how to use ezFit, visit:
 
 http://icecube.umd.edu/~elims/Fitter/ezFit
 
-More details have to be added, but an overall
-frame work is described. Please let me know
-everything you think I can improve 
-(code-wise, or website-wise)! Thanks :) 
+More details have to be added, but an overall frame work
+is described. Please let me know everything you think I
+can improve (code-wise, or website-wise)! Thanks :) 
 
 FYI, the name ezFit comes from the names of my very first 
 fitting scripts: e_z_histo.py, which builds energy and 
 zenith histograms, and e_z_fit.py, which fits the data 
 and mc histograms.
-
-==============================================================================
-05/11/2016
- -- misc_tools: fix bug in add_particle_info()
-
-05/05/2016
- -- converter: 
-    	-- add in lines to use martin's delta LLH as PID
-	   ( user will need to uncomment the lines )
-	-- change how RECO info is defined
-	   previously: mc flag; pid_attr
-	   now: pid is predefined before add_particle_info(); mc if pid=None
- -- misc_tools: 
-    	-- add exception to check user's setting
-	-- modify add_particle_info() to get flexible PID variable
-	-- modify print_events() to not break if backgrounds are not included
- -- masterdict.py:
-	-- update default params from http://www.nu-fit.org/?q=node/92#label10
-
-04/29/2016
- -- fix bug in random_sample() in fitter_tools.py
- -- enlarge the minimizer scan range for all norm's
- -- properly dump/load files via with/as statements

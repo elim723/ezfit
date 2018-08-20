@@ -11,10 +11,12 @@
 ####################################################################
 
 from __future__ import print_function
+import os
 import numpy as np
 from misc import InvalidArguments, Toolbox 
 from copy import deepcopy
 from nuparams import Nuparams
+from probmap import ProbMap
 
 #### all reweighting classes
 from specorrector import SPEPeakCorrector
@@ -53,7 +55,6 @@ class WeightCalculator (object):
                         self._dtype    = dtype
                         self._params   = params
                         self._events   = events
-                        self._check_args ()
                         
                         ## initialize info to store previous values
                         self._info     = {}
@@ -70,32 +71,6 @@ class WeightCalculator (object):
 
                         self.__dict__ = d
 
-            def _check_args (self):
-
-                        ''' check user's input arguments '''
-                        
-                        ## check dtype
-                        if not isinstance (self._dtype, str):
-                                    message = 'WeightCalc:check_args :: dtype must be a string.'
-                                    raise InvalidArguments (message)
-                        ## check params
-                        self._check_params ('check_args', self._params)
-
-            def _check_params (self, fname, params):
-
-                        ''' check user's params arguments
-
-                            :type   fname: a string
-                            :param  fname: name of the function checking param type
-
-                            :type  params: a dictionary
-                            :param params: values of parameters (both float and fixed)
-                        '''
-
-                        if not toolbox.is_dict (params):
-                                    message = fname + ':check_params :: params must be a dictionary.'
-                                    raise InvalidArguments (message)
-                        
             def _update (self, pname, new_value):
 
                         ''' check if this param is updated;
@@ -121,6 +96,8 @@ class WeightCalculator (object):
                         self._info [pname]['new_value'] = new_value
                         ## if new and old values are different, turn update to True
                         self._info [pname]['update'] = self._info [pname]['old_value'] != new_value
+                        message = 'WeightCalc:update : {0} old, new values ({1}): {2}, {3} '
+                        print (message.format (pname, self._info [pname]['update'], self._info [pname]['old_value'], self._info [pname]['new_value']))
 
             def _get_spe_factor (self, params, weights):
 
@@ -159,12 +136,20 @@ class WeightCalculator (object):
 ####################################################################
 class MuonWeighter (WeightCalculator):
 
-            ''' A class to calculate weights for muons
+            ''' A class to calculate weights for muon
 
                 Example
                 -------
                 In [0]: from weightcalculator import MuonWeighter
-                In [1]: 
+                In [1]: from member import Member
+                In [2]: from misc import Nuparams, seconds_per_year
+                In [3]: nuparams = Nuparams ('nunuisance_textfiles/nuparams_template.txt')
+                In [4]: params = nuparams.extract_params ('seeded')
+                In [5]: pdictpath = '/data/condor_builds/users/elims/ezfits/clean_ezfit/pickled_files/'
+                In [6]: muon = Member ('muon', pdictpath, baseline=True)
+                In [7]: weighter = weightcalculator.MuonWeighter (params, muon._events)
+                In [8]: scaling = params['norm_atmmu'] * params['nyears'] * seconds_per_year
+                In [9]: muon_rate = scaling * np.sum (weighter.reweight (params))
             '''
 
             def __init__ (self, params, events):
@@ -179,9 +164,11 @@ class MuonWeighter (WeightCalculator):
                         '''
 
                         WeightCalculator.__init__ (self, 'muon', params, events)
+                        
                         #### muon flux uncertainties (work by ste)
                         import MuonPrimaryUncertainties
-                        muflux_table='/data/i3store0/users/elims/fitter/muon_uncertainties/Muon1SigmaUncertaintiesCosZenith.txt'
+                        muflux_table = os.getcwd () + \
+                                       'MuonPrimaryUncertainties/Uncertainties/Muon1SigmaUncertaintiesCosZenith.txt'
                         self._muflux = MuonPrimaryUncertainties.Muon_Primary_Spline (kind='linear')
 
                         ## classify muongun events
@@ -209,9 +196,7 @@ class MuonWeighter (WeightCalculator):
                                                          if param == 'norm_corsika' else \
                                                          1 + params['muon_flux'] * \
                                                          self._muflux (self._events.mc.cz)
-                                                self._info [param]['factor'] = factor                        
-                        ## get spe factor
-                        self._get_spe_factor (params, weights)
+                                                self._info [param]['factor'] = factor
 
             def _get_weights (self, weights):
 
@@ -227,8 +212,6 @@ class MuonWeighter (WeightCalculator):
                         total_w = deepcopy (np.sum (weights))
                         weights *= self._info ['muon_flux']['factor']
                         weights *= total_w / np.sum (weights)
-                        ## apply SPE corr factor
-                        weights *= self._info ['spe_corr']['factor']
                         return weights
                         
             def reweight (self, params):
@@ -239,14 +222,15 @@ class MuonWeighter (WeightCalculator):
                             :param params: values of reweighting parameters
                         '''
 
-                        ## check params
-                        self._check_params ('MuonWeighter', params)
-
                         ## get muon reweighting factors
-                        w = deepcopy (np.array (self._events.w))
-                        self._get_factors (params, w)
+                        weights = deepcopy (np.array (self._events.w))
+                        self._get_factors (params, weights)
+                        weights = self._get_weights (weights)
 
-                        return self._get_weights (w)
+                        ## apply SPE corr factor
+                        self._get_spe_factor (params, weights)
+                        weights *= self._info ['spe_corr']['factor']
+                        return weights
 
 ####################################################################
 #### Noise Weight Calculator
@@ -257,8 +241,16 @@ class NoiseWeighter (WeightCalculator):
 
                 Example
                 -------
-                In [0]: from weightcalculator import MuonWeighter
-                In [1]: 
+                In [0]: from weightcalculator import NoiseWeighter
+                In [1]: from member import Member
+                In [2]: from misc import Nuparams, seconds_per_year
+                In [3]: nuparams = Nuparams ('nunuisance_textfiles/nuparams_template.txt')
+                In [4]: params = nuparams.extract_params ('seeded')
+                In [5]: pdictpath = '/data/condor_builds/users/elims/ezfits/clean_ezfit/pickled_files/'
+                In [6]: noise = Member ('noise', pdictpath, baseline=True)
+                In [7]: weighter = weightcalculator.NoiseWeighter (params, noise._events)
+                In [8]: scaling = params['norm_noise'] * params['nyears'] * seconds_per_year
+                In [9]: noise_rate = scaling * np.sum (weighter.reweight (params))
             '''
 
             def __init__ (self, params, events):
@@ -274,21 +266,6 @@ class NoiseWeighter (WeightCalculator):
                         '''
 
                         WeightCalculator.__init__ (self, 'noise', params, events)
-
-            def _get_factors (self, params, weights):
-
-                        ''' determine noise reweighting factors
-                            this is where self._info factors get modified
-
-                            :type  params: a dictionary
-                            :param params: values of reweighting parameters
-                        
-                            :type  weights: a 1D array 
-                            :param weights: initial event weights 
-                        '''
-
-                        ## get spe factor
-                        self._get_spe_factor (params, weights)
             
             def reweight (self, params):
 
@@ -301,17 +278,13 @@ class NoiseWeighter (WeightCalculator):
                                     weights: noise weights
                         '''
 
-                        ## check params
-                        self._check_params ('NoiseWeighter', params)
+                        weights = deepcopy (np.array (self._events.w))
 
-                        ## get noise factors
-                        w = deepcopy (np.array (self._events.w))
-                        self._get_factors (params, w)
+                        ## apply SPE corr factor
+                        self._get_spe_factor (params, weights)
+                        weights *= self._info ['spe_corr']['factor']
 
-                        ## apply spe factor
-                        w *= self._info ['spe_corr']['factor']
-
-                        return w
+                        return weights
 
 ####################################################################
 #### Neutrino Weight Calculator
@@ -322,8 +295,18 @@ class NeutrinoWeighter (WeightCalculator):
 
                 Example
                 -------
-                In [0]: from weightcalculator import NoiseWeighter
-                In [1]: 
+                In [0]: from weightcalculator import NeutrinoWeighter
+                In [1]: from member import Member
+                In [2]: from misc import Nuparams, seconds_per_year
+                In [3]: nuparams = Nuparams ('nunuisance_textfiles/nuparams_template.txt')
+                In [4]: params = nuparams.extract_params ('seeded')
+                In [5]: pdictpath = '/data/condor_builds/users/elims/ezfits/clean_ezfit/pickled_files/'
+                In [6]: numucc = Member ('noise', pdictpath, baseline=True)
+                In [7]: weighter = weightcalculator.NeutrinoWeighter ('numucc', params,
+                                                                      numucc._events,
+                                                                      matter=True, oscnc=False)
+                In [8]: scaling = params['norm_numu'] * params['nyears'] * seconds_per_year
+                In [9]: numucc_rate = scaling * np.sum (weighter.reweight (params))
             '''
 
             def __init__ (self, dtype, params, events,
@@ -353,17 +336,15 @@ class NeutrinoWeighter (WeightCalculator):
                         WeightCalculator.__init__ (self, dtype, params, events)
                         self._matter = matter
                         self._oscnc  = oscnc
-                        self._check_bool ()
+                        ## Prob3 prep
+                        self.probmap = pmap if pmap else \
+                                       ProbMap (matter=matter, params=params)
 
                         ## identify event types
                         self._classify_events ()
                         ## Honda flux object
                         from hondamodifier import HondaModifier
                         self._flux_modifier = HondaModifier ()
-                        ## Prob3 oscillation object
-                        from probmap import ProbMap
-                        self.probmap = pmap if pmap else \
-                                       ProbMap (matter=self._matter, params=params)
 
             @staticmethod
             def axialMassVar (coeff=np.zeros(2), Ma=0.):
@@ -401,15 +382,6 @@ class NeutrinoWeighter (WeightCalculator):
                         '''
                         return b*bjorken_x**(-a)
                         
-            def _check_bool (self):
-
-                        ''' check boolean users' boolean inputs '''
-
-                        for arg in ['matter', 'oscnc']:
-                                    if not isinstance (eval ('self._'+arg), bool):
-                                                message = 'NeutrinoWeighter:check_bool :: '+arg+' must be a boolean.'
-                                                raise InvalidArguments (message)
-
             def _classify_events (self):
                                     
                         ''' classify nugen / res / qe / dis nu / dis nubar events '''
@@ -460,17 +432,19 @@ class NeutrinoWeighter (WeightCalculator):
                                                np.zeros (len (e))
                                     self._info ['oscprob'] = {'atm_nue':atm_nue, 'atm_numu':atm_numu}
                         else:
+                                    ## determine if need to redo prob3 map
                                     redoprob3 = False
                                     for param in ['dm31', 'theta23', 'theta13']:
                                                 self._update (param, params[param])
                                                 ## turn on flag if any osc parameters are changed
                                                 if self._info [param]['update']:
-                                                            redoprob3 = True
-                                                            break
-                                    if redoprob3:
-                                                prob = self.probmap.get_prob (e, cz, pdg, params)
-                                                self._info ['oscprob'] = {'atm_nue':prob[:,0],
-                                                                          'atm_numu':prob[:,1]}
+                                                            redoprob3 = True; break
+                                    ## redo prob3 map if needed
+                                    if redoprob3: self.probmap = ProbMap (matter=self._matter, params=params)
+                                    ## get oscillation prob factor
+                                    prob = self.probmap.get_prob (e, cz, pdg, params)
+                                    self._info ['oscprob'] = {'atm_nue':prob[:,0],
+                                                              'atm_numu':prob[:,1]}
                                                 
             def _get_flux_factors (self, params, e, cz, pdg):
 
@@ -587,7 +561,7 @@ class NeutrinoWeighter (WeightCalculator):
                         ## apply honda related factors
                         for param in ['nue_numu_ratio', 'gamma', 'barr_nubar_ratio', 'barr_uphor_ratio']:
                                     fluxes['atm_nue']  *= self._info [param]['factor']
-                                    ## nue_numu_ratio is applued to atm_nue component
+                                    ## nue_numu_ratio is applied to atm_nue component
                                     if param=='nue_numu_ratio': continue
                                     fluxes['atm_numu'] *= self._info [param]['factor']
                                     
@@ -612,8 +586,6 @@ class NeutrinoWeighter (WeightCalculator):
 
                         ## get xsection factors
                         self._get_xsec_factors (params)
-                        ## get spe factors
-                        self._get_spe_factor (params, weights)
                         ## get nugen factors
                         self._get_nugen_factors (params)
 
@@ -623,19 +595,20 @@ class NeutrinoWeighter (WeightCalculator):
 
                         ## apply xsec factors
                         mparams = ['DISa_nu', 'DISa_nubar']
+                        ## axm are only for cc types
                         if 'cc' in self._dtype: mparams += ['axm_res', 'axm_qe']
                         for param in mparams:
                                     if 'res' in param or 'qe' in param:
-                                                weights[eval ('self._'+param.split('_') [1])] *= self._info [param]['factor']
+                                                key = eval ('self._'+param.split('_') [1])
+                                                weights[key] *= self._info [param]['factor']
                                     else: ## DIS
                                                 isdis = self._nubar_dis if 'nubar' in param else self._nu_dis
                                                 weights[isdis] *= self._info [param]['factor']
 
-                        ## apply SPE corr factor
-                        weights *= self._info ['spe_corr']['factor']
                         ## apply nugen factors
                         weights[self._isnugen]   *= self._info ['norm_nugen']['factor']
                         weights[self._isnugenHE] *= self._info ['norm_nugenHE']['factor']
+                        
                         return weights
                         
             def reweight (self, params):
@@ -649,15 +622,17 @@ class NeutrinoWeighter (WeightCalculator):
                                     weights: neutrino weights
                         '''
 
-                        ## check params
-                        self._check_params ('NeutrinoWeighter', params)
-
                         ## nu factors up to oscillation probability
                         self._get_nu_factors (params)
-                        w = self._get_nu_weights ()
+                        weights = self._get_nu_weights ()
 
                         ## nu factors related to xsection / spe / nugen
-                        self._get_factors (params, w)
+                        self._get_factors (params, weights)
+                        weights = self._get_weights (weights)
 
-                        return self._get_weights (w)
+                        ## apply SPE corr factor
+                        self._get_spe_factor (params, weights)
+                        weights *= self._info ['spe_corr']['factor']
+                        
+                        return weights
 

@@ -87,7 +87,6 @@ class ProbMap (object):
         self._ebins  = ebins
         self._czbins = czbins
         self._params = self.extract_oscparams (params)
-        self._check_args (self._params)
         
         ### set up variable for probability map
         self._nubar = np.array ([-1., 1.])
@@ -110,12 +109,7 @@ class ProbMap (object):
             :return oscparams: a dictionary
                     oscparams: values of oscillation parameters
         '''
-
-        ## make sure its a dictionary
-        if not toolbox.is_dict (params):
-            message = 'ProbMap:extract_oscparams :: params must be a dictionary.'
-            raise InvalidArguments (message)
-
+        
         ## extract osc params
         oscparams = {}
         for param in params:
@@ -135,59 +129,6 @@ class ProbMap (object):
 
         self.__dict__ = d
     
-    
-    def _check_args (self, params):
-
-        ''' check user's input arguments '''
-
-        ## check matter
-        if not isinstance (self._matter, bool):
-            message = 'ProbMap:check_args :: matter must be a boolean.'
-            raise InvalidArguments (message)
-        ## check ebins / cz bins 
-        for arg in ['ebins', 'czbins']:
-            if not toolbox.is_array (eval ('self._'+arg)):
-                message = 'ProbMap:check_args :: '+arg+' must be a 1D array.'
-                raise InvalidArguments (message)
-        ## check params
-        self._check_params (params)        
-        
-    def _check_params (self, params):
-
-        ''' check user's params arguments
-
-            :type  params: a dictionary
-            :param params: values of oscillation parameters
-        '''
-
-        if not toolbox.is_dict (params):
-            message = 'ProbMap:check_args :: params must be a dictionary.'
-            raise InvalidArguments (message)
-        for param in params.keys ():
-            if param not in default_params:
-                message = 'ProbMap:check_args :: '+param+' not registered as an oscillation parameter.'
-                raise InvalidArguments (message)
-
-    def _check_observables (self, e, cz, pdg):
-
-        ''' check users observatbles inputs
-
-            :type  e: float or an array of float
-            :param e: energy (GeV)
-
-            :type  cz: float or an array of float
-            :param cz: cos zenith angle
-
-            :type  pdg: float or an array of float
-            :param pdg: particle encoding (+/- 12/4/6)
-        '''
-        
-        for arg in ['e', 'cz', 'pdg']:
-            var = eval (arg)
-            if not (toolbox.is_array (var) or toolbox.is_number (var)):
-                message = 'ProbMap:get_prop_distance :: '+arg+' must be a float or an array of float.'
-                raise InvalidArguments (message)
-
     def _set_params (self, params):
 
         ''' set new parameters
@@ -264,12 +205,7 @@ class ProbMap (object):
             :return distance: float or an array of float 
                     distance: propagation distance(s) 
         '''
-
-        ## check input arguments
-        if not (toolbox.is_array (zenith) or toolbox.is_number (zenith)):
-            message = 'ProbMap:get_prop_distance :: zenith must be a float or an array of float.'
-            raise InvalidArguments (message)
-
+        
         ## based on Earth's geometry
         L1 = 19.; R = 6378.2 + L1
         phi = np.arcsin((1-L1/R)*np.sin(zenith))
@@ -295,11 +231,6 @@ class ProbMap (object):
             :return  oscprob: an array with shape 2 x length of array 
                      oscprob: oscillation probabilities from atm nue and atm numu
         '''
-
-        ## check e/cz/pdg arguments
-        self._check_observables (e, cz, pdg)
-        ## check params argument
-        self._check_params (params)
 
         ## calculate oscillation probability
         NuE = 1 ; NuMu = 2 ; NuTau = 3
@@ -364,12 +295,6 @@ class ProbMap (object):
             :return  oscprob: an array with shape 2 x length of array 
                      oscprob: oscillation probabilities from atm nue and atm numu
         '''
-
-        ## check observable inputs
-        self._check_observables (e, cz, pdg)
-        ## check params input
-        params = self.extract_oscparams (params)
-        self._check_params (params)
 
         ## check if need to do oscillation spline
         self.get_oscprob (params)

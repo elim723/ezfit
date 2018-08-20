@@ -78,7 +78,6 @@ class Member (object):
             self._sysvalues  = sysvalues
             self._pdictpath  = pdictpath
             self._ranges     = ranges
-            self._check_args ()
             
             self._pfile = self._get_pfile ()
             self._events = self._load_events ()
@@ -124,44 +123,7 @@ class Member (object):
                 ''' return which systematic set this member is '''
 
                 return self._sysvalues
-
             
-        def _check_args (self):
-
-                ''' check argument inputs '''
-            
-                ## check data type
-                if not self._dtype in datatypes:
-                        message = 'Member:check_args :: '+self._dtype+' not registed as data types.'
-                        raise InvalidArguments (message)
-
-                ## check data vs baseline sets vs sysvalues
-                if 'data' in self._dtype:
-                        # if data set, ignore baseline / sys values
-                        if self._isbaseline:
-                                message = 'Member:check_args :: WARNING: getting data; isbaseline ignored.'
-                                print ('#### {0}'.format (message))
-                        if len (self._sysvalues) > 0:
-                                message = 'Member:check_args :: WARNING: getting data; systematic values ignored.'
-                                print ('#### {0}'.format (message))
-                elif self._isbaseline:
-                        # if baseline set, ignore sys values
-                        if len (self._sysvalues) > 0:
-                                message = 'Member:check_args :: WARNING: getting baseline sets; systematic values ignored.'
-                                print ('#### {0}'.format (message))
-                else:
-                        # if noise, must be baseline set
-                        if 'noise' in self._dtype:
-                                message = 'Member:check_args :: noise must be baseline set.'
-                                raise InvalidArguments (message)
-                        # if not baseline set, sysvalues keys within discrete_parameters
-                        matches = len ([ sysname for sysname in self._sysvalues.keys () if not sysname in dparams ])
-                        if matches > 0:
-                                message = 'Member:check_args :: sys parameter name(s) does not match. Check spelling ?'
-                                print ('your sysnames: {0}'.format (self._sysvalues.keys ()))
-                                raise InvalidArguments (message)
-                return
-
         def _get_pfile (self):
 
                 ''' define and check pickled file
@@ -189,10 +151,6 @@ class Member (object):
                         
                 # check if pickled file exist
                 pfile = self._pdictpath + '/' + pname
-                if not os.path.exists (pfile):
-                        message = 'Member:check_args :: pickled file (' + pname + \
-                                  ') does not exist in ' + self._pdictpath
-                        raise InvalidArguments (message)
                 return pfile
 
         def _select_events (self, ddict):
@@ -233,10 +191,13 @@ class Member (object):
                              sdict: a dictionary containing all selected events
                 '''
 
-                with open (self._pfile, "rb") as f:
-                        ddict = cPickle.load(f)
-                f.close()
-                return self._select_events (ddict)
+                try:
+                        with open (self._pfile, "rb") as f:
+                                ddict = cPickle.load(f)
+                        f.close()
+                        return self._select_events (ddict)
+                except IOError:
+                        raise IOError ('{0} does not exist ...'.format (self._pfile))
 
         def apply_cut (self, ddict, cut):
 
@@ -316,11 +277,6 @@ class Member (object):
                             weights: weights for each event
                 '''
 
-                ## check params
-                if not toolbox.is_dict (params):
-                        message = 'Member:get_weights :: params must be a dictionary.'
-                        raise InvalidArguments (message)
-
                 ## normalization factors
                 livetime = seconds_per_year * params ['nyears']
 
@@ -329,12 +285,7 @@ class Member (object):
                         ## return equal weights if data
                         greco_livetime = seconds_per_year * greco_nyears
                         return np.ones (len (self._events.reco.e)) / greco_livetime * livetime
-                
-                ## check weighter
-                if weighter and not isinstance (weighter, weightcalculator.WeightCalculator):
-                        message = 'Member:get_weights :: weighter must be a WeightCalculator.'
-                        raise InvalidArguments (message)
-                
+
                 ## define weighter if not parsed
                 if not weighter:
                         weighter = self.get_weighter (params, matter=matter, oscnc=oscnc, pmap=pmap)

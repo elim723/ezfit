@@ -53,7 +53,6 @@ class Likelihood (object):
         self._dhisto = dhisto
         self._method = method
         self._verbose = verbose
-        self._check_args ()
 
         self._shape, self._nbins = self._set_params ()
         self._dhisto = Map ({ 'H':self._dhisto.H.flatten (),
@@ -70,54 +69,6 @@ class Likelihood (object):
         ''' set state for pickling '''
 
         self.__dict__ = d
-
-        
-    def _check_args (self):
-
-        ''' check user's input '''
-
-        head = 'Likelihood:check_args :: '
-        ## dhisto are dictionaries
-        if not toolbox.is_dict (self._dhisto):
-            message = head+'dhisto must be a dictionary.'
-            raise InvalidArguments (message)
-
-        ## verbose must be int
-        if not isinstance (self._verbose, int):
-            message = head+'verbose must be an integer.'
-            raise InvalidArguments (message)
-
-        ## method
-        if not isinstance (self._method, str):
-            message = head+'method must be a string.'
-            raise InvalidArguments (message)
-        if not self._method in ['chi2', 'modchi2', 'poisson', 'barlow']:
-            ## if barlow
-            warning = head+'You turned on Barlow; make sure you set unweighted info.'
-            message = head+'method must be either chi2 / modchi2 / poisson / barlow.'
-            raise InvalidArguments (message)
-
-    def _check_histos_args (self, histos):
-
-        ''' check user's histos inputs '''
-        
-        head = 'Likelihood:check_histos_args :: '
-        ## histos: weighted histos dictionary
-        if not toolbox.is_dict (histos):
-            message = head+'histos must be a dictionary.'
-            raise InvalidArguments (message)
-        
-    def _check_barlow_args (self, unhistos, norms):
-
-        ''' check user's barlow inputs '''
-        
-        head = 'Likelihood:check_barlow_args :: '
-        ## unhistos: unweighted histos dictionary
-        ## norms: normalization dictoinary
-        for arg in ['unhistos', 'norms']:
-            if not toolbox.is_dict (eval (arg)):
-                message = head+arg+' must be a dictionary.'
-                raise InvalidArguments (message)
         
     def _print_header (self, shape, nbins):
         
@@ -221,7 +172,6 @@ class Likelihood (object):
                             'nuecc' : {'H':[], 'H2':[]}, ...}
         '''
 
-        self._check_histos_args (histos)
         ## change self._histos from dictionary to flattened numpy array
         self._histos = histos
         self._dtypes = sorted ([ dtype for dtype in self._histos ])
@@ -241,8 +191,6 @@ class Likelihood (object):
             :param  norm: normalization factors {'numucc':x, 'nuecc':x,
                                                  'nutaucc':x, ...}
         '''
-
-        self._check_barlow_args (unhistos, norms)
 
         ## change self._unhistos/self._norms from dictionary to numpy array
         self._unohistos, self._unvhistos = self._order_histos (unhistos)

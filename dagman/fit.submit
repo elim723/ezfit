@@ -22,7 +22,7 @@
 
 ## Condor 7.8 (new on npx4 Dec 2012): Jobs requiring more than 2GB of memory or 1CPU can now add:
 #request_cpus = <num_cpus>
-request_memory = 22000
+request_memory = 5000
 #MB
 #request_disk = <disk_in_KB>
 

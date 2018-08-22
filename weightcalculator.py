@@ -13,7 +13,7 @@
 from __future__ import print_function
 import os
 import numpy as np
-from misc import InvalidArguments, Toolbox 
+from misc import InvalidArguments
 from copy import deepcopy
 from nuparams import Nuparams
 from probmap import ProbMap
@@ -22,7 +22,6 @@ from probmap import ProbMap
 from specorrector import SPEPeakCorrector
 
 seconds_per_year = 3600.*24.*365.24
-toolbox = Toolbox ()
 
 ####################################################################
 #### General Weight Calculator
@@ -82,7 +81,7 @@ class WeightCalculator (object):
                             :type  new_value: a float
                             :param new_value: new value of the parameter
                         '''
-
+                        
                         ## if self._info does not have this parameter, register and return True
                         if not self._info.has_key (pname):
                                     if not new_value == self._params [pname]:
@@ -96,8 +95,6 @@ class WeightCalculator (object):
                         self._info [pname]['new_value'] = new_value
                         ## if new and old values are different, turn update to True
                         self._info [pname]['update'] = self._info [pname]['old_value'] != new_value
-                        message = 'WeightCalc:update : {0} old, new values ({1}): {2}, {3} '
-                        print (message.format (pname, self._info [pname]['update'], self._info [pname]['old_value'], self._info [pname]['new_value']))
 
             def _get_spe_factor (self, params, weights):
 
@@ -196,7 +193,7 @@ class MuonWeighter (WeightCalculator):
                                                          if param == 'norm_corsika' else \
                                                          1 + params['muon_flux'] * \
                                                          self._muflux (self._events.mc.cz)
-                                                self._info [param]['factor'] = factor
+                                                self._info [param]['factor'] = factor 
 
             def _get_weights (self, weights):
 
@@ -262,7 +259,6 @@ class NoiseWeighter (WeightCalculator):
 
                             :type    events: a dictionary
                             :param   events: all event variables
-
                         '''
 
                         WeightCalculator.__init__ (self, 'noise', params, events)
@@ -432,16 +428,8 @@ class NeutrinoWeighter (WeightCalculator):
                                                np.zeros (len (e))
                                     self._info ['oscprob'] = {'atm_nue':atm_nue, 'atm_numu':atm_numu}
                         else:
-                                    ## determine if need to redo prob3 map
-                                    redoprob3 = False
-                                    for param in ['dm31', 'theta23', 'theta13']:
-                                                self._update (param, params[param])
-                                                ## turn on flag if any osc parameters are changed
-                                                if self._info [param]['update']:
-                                                            redoprob3 = True; break
-                                    ## redo prob3 map if needed
-                                    if redoprob3: self.probmap = ProbMap (matter=self._matter, params=params)
-                                    ## get oscillation prob factor
+                                    ## PropMap internally checks if new osc map needs to
+                                    ## be regenerated
                                     prob = self.probmap.get_prob (e, cz, pdg, params)
                                     self._info ['oscprob'] = {'atm_nue':prob[:,0],
                                                               'atm_numu':prob[:,1]}
@@ -475,7 +463,7 @@ class NeutrinoWeighter (WeightCalculator):
                                                             factor = self._flux_modifier.mod_ratio_UpHor (e, cz, pdg,
                                                                                                           params['barr_uphor_ratio'])
                                                 elif param == 'nue_numu_ratio':
-                                                            factor = params['nue_numu_ratio']
+                                                            factor = params['nue_numu_ratio'] 
                                                 else: ## gamma
                                                             factor = np.power (e, params['gamma'])
                                                 ### define factor
@@ -524,7 +512,7 @@ class NeutrinoWeighter (WeightCalculator):
                         for param in ['norm_nugen', 'norm_nugenHE']:
                                     self._update (param, params[param])
                                     if self._info [param]['update']:
-                                                self._info [param]['factor'] = params[param]
+                                                self._info [param]['factor'] = params[param] 
                                                 
             def _get_nu_factors (self, params):
 

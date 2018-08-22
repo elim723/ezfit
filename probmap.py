@@ -96,7 +96,7 @@ class ProbMap (object):
                                                                    indexing = 'ij')
 
         ### get splined oscillation functions
-        self.get_oscprob (self._params)
+        self.get_oscmap (self._params)
 
     @staticmethod
     def extract_oscparams (params):
@@ -145,14 +145,13 @@ class ProbMap (object):
             value = default_params[key] if not key in params.keys () else params[key]
             updated[key] = value
 
-        ## if self._params exist, check if anything different        
+        ## if self._params exist, check if anything different
+        isdiff = True
         if hasattr (self, '_params'):
             isdiff = False
             for key in self._params:
                 if not updated[key] == self._params[key]:
                     isdiff = True; break
-        else:
-            isdiff = True
         return updated, isdiff
 
     def _get_probmap (self):
@@ -259,7 +258,7 @@ class ProbMap (object):
                                                             float (e[i]), distance)]
         return osc_prob
     
-    def get_oscprob (self, params):
+    def get_oscmap (self, params):
 
         ''' set new parameters; update prob maps; spline maps
             this is where spline function is defined
@@ -297,7 +296,7 @@ class ProbMap (object):
         '''
 
         ## check if need to do oscillation spline
-        self.get_oscprob (params)
+        self.get_oscmap (params)
 
         ## separate nu and nubar events
         isnubar = pdg < 0

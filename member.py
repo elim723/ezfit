@@ -244,7 +244,7 @@ class Member (object):
                     :return weighter: a weightcalculator object
                             weighter: a weight calculator 
                 '''
-
+                
                 weighter = None if 'data' in self._dtype else \
                            weightcalculator.NoiseWeighter (params, self._events) if 'noise' in self._dtype else \
                            weightcalculator.MuonWeighter  (params, self._events) if 'muon'  in self._dtype else \
@@ -295,7 +295,6 @@ class Member (object):
                 norm = params['norm_nutau'] if 'nutau' in self._dtype else \
                        params['norm_nc'] if 'nc' in self._dtype else 1
                 norm *= params['norm_'+key] * livetime
-                
                 ## get weights
                 return norm * weighter.reweight (params)
 
@@ -330,7 +329,7 @@ class Member (object):
                 #### make sure event variables are finite
                 finite = np.logical_and (np.logical_and (np.logical_and (np.isfinite (e), np.isfinite (z)),
                                                          np.isfinite (w)), np.isfinite (pid))
-
+                
                 #### define data/edges/ranges
                 data = [ e[finite], z[finite], pid[finite] ]
                 hedges = (edges['e'], edges['z'], edges['p'])

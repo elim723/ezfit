@@ -118,7 +118,7 @@ def get_lib_histos (dtypes, params):
     '''
 
     lib, bhistos = temp.get_baseline_histograms (dtypes, params)
-    mhistos, mc, var = temp.get_template (dtypes, params, lib, bhistos, temp.hplanes)
+    mhistos, mc, var = temp.get_template (dtypes, params, lib, bhistos)
     dhisto = temp.dhisto
     if verbose > 0:
         temp._print_rates ('hplaned', mhistos)

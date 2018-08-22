@@ -1,15 +1,15 @@
 #!/bin/sh
 
 maindir="/data/condor_builds/users/elims/ezfits/clean_ezfit/"
-outdir="/data/i3store0/users/elims/clean_fit/fits/"
-nuparamdir="/data/i3store0/users/elims/clean_fit/nuparam_textfiles/convergence_nohplane/"
+outdir="/data/i3store0/users/elims/clean_fit/fits/convergence/"
+nuparamdir="/data/i3store0/users/elims/clean_fit/nuparam_textfiles/convergence/"
 
 HISTsub="${maindir}/dagman/temp.submit"
 HISTscript="${maindir}/generate_template.py"
 
 FITsub="${maindir}/dagman/fit.submit"
 FITscript="${maindir}/fit_template.py"
-FITargs="--test_statistics modchi2  --verbose 1"
+FITargs="--test_statistics modchi2 --verbose 1"
 
 #########################################################
 #### define DAG arguments 

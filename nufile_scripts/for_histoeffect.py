@@ -139,11 +139,6 @@ for param in params:
         for index, line in enumerate (intxt):
             if line=='' or line[0] in ['#', ' ', '\n']:
                 outtxt.write(line)
-            #elif nuParams (param).isdiscrete:
-                # ====================================
-                # temporary: exclude hplane / dparams
-                #oline = line.replace ('True', 'False')
-                # ====================================
             elif param in line.strip ().split ()[0]:
                 initial = '2.526' if 'dm31' in param else \
                           str (int (nuParams (param).injected)) if 'holeice' in param else \

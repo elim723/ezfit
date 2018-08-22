@@ -151,7 +151,8 @@ class Template (object):
 
         lib = Library (dtypes, self.info ('pdictpath'),
                        ranges=self.info.get_ranges (),
-                       edges=self.info.get_edges ())
+                       edges=self.info.get_edges (),
+                       verbose=self.info ('verbose'))
         lib.set_weighters (params,
                            matter=self.info ('matter'),
                            oscnc=self.info ('oscnc'))

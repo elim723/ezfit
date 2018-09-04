@@ -11,9 +11,8 @@
 
 from __future__ import print_function
 from scipy.interpolate import RectBivariateSpline
-from misc import Toolbox, InvalidArguments
 import numpy as np
-import socket
+import socket, time
 
 ###########################################################################
 #### Prob3 essential
@@ -38,8 +37,6 @@ default_params = {'dm21': 7.49e-5,
                   'theta12': np.arcsin (np.sqrt (0.308))  ,
                   'theta13': np.arcsin (np.sqrt (0.02163)),
                   'deltacp': 0                             }
-
-toolbox = Toolbox ()
 
 ###########################################################################
 #### ProbMap class
@@ -142,7 +139,8 @@ class ProbMap (object):
         updated = {}
         for key in default_params:
             ## if key not in params, refill default parameters (dm21 / deltacp / etc)
-            value = default_params[key] if not key in params.keys () else params[key]
+            value = default_params[key] if not key in params.keys () else \
+                    round (params[key], 10)
             updated[key] = value
 
         ## if self._params exist, check if anything different

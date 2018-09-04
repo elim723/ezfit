@@ -256,8 +256,17 @@ class HyperPlane (object):
         xvalues, yvalues, variances = [], [], []
 
         refid = self._get_refid ()
-        ref_w  = self._histos [refid]['H']
-        ref_w2 = self._histos [refid]['H2']
+        try:
+            ref_w  = self._histos [refid]['H']
+            ref_w2 = self._histos [refid]['H2']
+        except:
+            ## to deal with muon sets without holeice on
+            refid = refid.replace ('25', '30')
+            ref_w  = self._histos [refid]['H']
+            ref_w2 = self._histos [refid]['H2']
+        print ('-- {0}'.format (self._dtype))
+        print ('  -- default: {0}'.format (self._default))
+        print ('  -- refid  : {0}'.format (refid))
 
         for setid in self._histos.keys ():
 

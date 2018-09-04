@@ -127,7 +127,7 @@ class Error (Exception):
 class InvalidArguments (Error):
         def __init__ (self, message):
                 super (Error, self).__init__ (message)
-        
+                
 ###########################################################################
 #### a Map class to map dictionary key to attribute.
 ###########################################################################
@@ -345,15 +345,9 @@ class Info (object):
                                 raise InvalidArguments (message)
 
                 ## check nufiles
-                if not os.path.isfile (self._inputs['nuparam_textfile']):
-                        message = 'misc:Info :: nuparam_textfile does not exist'
-                        raise InvalidArguments (message)
 
                 ## check outdir
-                if not os.path.exists (os.path.split (self._inputs['outfile'])[0]):
-                        message = 'misc:Info :: out folder does not exist; ' + \
-                                  os.path.split (self._inputs['outfile'][0])
-                        raise InvalidArguments (message)
+
                 return
 
 ###########################################################################
@@ -377,6 +371,23 @@ class Toolbox (object):
 
                 self.__dict__ = d
 
+        def check_path (self, path):
+
+                ''' check if a path exist '''
+                
+                if not os.path.exists (path):
+                        message = 'misc:toolbox :: path does not exist; ' + path
+                        raise InvalidArguments (message)
+
+        def check_file (self, filename):
+
+                ''' check if a file exist '''
+                
+                if not os.path.isfile (filename):
+                        message = 'misc:toolbox :: file does not exist' + \
+                                  filename
+                        raise InvalidArguments (message)
+                
         def is_number (self, var):
 
                 ''' check if var is a float / int '''
@@ -422,7 +433,8 @@ class Toolbox (object):
                     :param    args: arrays from multiple dictionaries
 
                     :return carray: a numpy array
-                            carray: an array concatenated from multiple dictionaries
+                            carray: an array concatenated from
+                                    multiple dictionaries
                 '''
 
                 carray = np.array (arrays[0])
@@ -445,6 +457,8 @@ class Toolbox (object):
                 if self.is_dict (d1[key]):
                     cdict[key] = Map({})
                     for skey in d1[key].keys():
-                        cdict[key][skey] = self.merge ([ d[key][skey] for d in [d1, d2, d3] if d ])
+                        cdict[key][skey] = self.merge ([ d[key][skey]
+                                                         for d in [d1, d2, d3]
+                                                         if d ])
             return cdict
 

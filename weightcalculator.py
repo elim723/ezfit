@@ -11,17 +11,15 @@
 ####################################################################
 
 from __future__ import print_function
-import os
+import os, time
 import numpy as np
-from misc import InvalidArguments
+from misc import InvalidArguments, seconds_per_year
 from copy import deepcopy
 from nuparams import Nuparams
 from probmap import ProbMap
 
 #### all reweighting classes
 from specorrector import SPEPeakCorrector
-
-seconds_per_year = 3600.*24.*365.24
 
 ####################################################################
 #### General Weight Calculator
@@ -50,7 +48,6 @@ class WeightCalculator (object):
                             :type    events: a dictionary
                             :param   events: all event variables
                         '''
-
                         self._dtype    = dtype
                         self._params   = params
                         self._events   = events
@@ -87,7 +84,7 @@ class WeightCalculator (object):
                                     if not new_value == self._params [pname]:
                                                 message = 'WeightCalc:update : WARNING : {0} different new and default values.'
                                                 print (message.format (pname))
-                                    self._info[pname] = {'new_value':new_value, 'update':True}
+                                    self._info[pname] = {'old_value':None, 'new_value':new_value, 'update':True}
                                     return
                                     
                         ## exchange new and old values
@@ -193,7 +190,7 @@ class MuonWeighter (WeightCalculator):
                                                          if param == 'norm_corsika' else \
                                                          1 + params['muon_flux'] * \
                                                          self._muflux (self._events.mc.cz)
-                                                self._info [param]['factor'] = factor 
+                                                self._info [param]['factor'] = factor
 
             def _get_weights (self, weights):
 
@@ -451,7 +448,7 @@ class NeutrinoWeighter (WeightCalculator):
                             :type       pdg: a 1D numpy array
                             :param      pdg: particle encoding (+/- 12/4/6)
                         '''
-                        
+
                         for param in ['nue_numu_ratio', 'gamma', 'barr_nubar_ratio', 'barr_uphor_ratio']:
                                     self._update (param, params[param])
                                     if self._info [param]['update']:
@@ -512,7 +509,7 @@ class NeutrinoWeighter (WeightCalculator):
                         for param in ['norm_nugen', 'norm_nugenHE']:
                                     self._update (param, params[param])
                                     if self._info [param]['update']:
-                                                self._info [param]['factor'] = params[param] 
+                                                self._info [param]['factor'] = params[param]
                                                 
             def _get_nu_factors (self, params):
 
@@ -621,6 +618,5 @@ class NeutrinoWeighter (WeightCalculator):
                         ## apply SPE corr factor
                         self._get_spe_factor (params, weights)
                         weights *= self._info ['spe_corr']['factor']
-                        
                         return weights
 

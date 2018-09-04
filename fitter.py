@@ -23,7 +23,6 @@ from library import Library
 from likelihood import Likelihood
 from template import Template
 
-toolbox = Toolbox ()
 ###########################################
 #### Fitter class
 ###########################################
@@ -73,7 +72,6 @@ class Fitter (object):
         self._lib, self._LH, self._temp = lib, LH, temp
         self._fparams = fparams
         self._verbose = verbose
-        self._check_args ()
 
         ## define holders
         self.bestfit = Map ({'H':[], 'H2':[], 'ts':[]})
@@ -87,46 +85,6 @@ class Fitter (object):
         self.results = self._minimize ()
         print ('#### ##################################################')
 
-    def _check_args (self):
-
-        ''' check user inputs '''
-
-        head = 'Fitter:check_args :: '
-        ## nuparams
-        if not isinstance (self._nuparams, Nuparams):
-            message = head+'nuparams must be a Nuparams object.'
-            raise InvalidArguments (message)
-
-        ## params
-        if not toolbox.is_dict (self._params):
-            message = head+'params must be a dictionary.'
-            raise InvalidArguments (message)
-
-        ## lib
-        if not isinstance (self._lib, Library):
-            message = head+'lib must be a Library object.'
-            raise InvalidArguments (message)
-
-        ## LH
-        if not isinstance (self._LH, Likelihood):
-            message = head+'LH must be a Likelihood object.'
-            raise InvalidArguments (message)
-
-        ## temp
-        if not isinstance (self._temp, Template):
-            message = head+'temp must be a Template object.'
-            raise InvalidArguments (message)
-
-        ## fparams
-        if not toolbox.is_array (self._fparams):
-            message = head+'fparams must be a list / array.'
-            raise InvalidArguments (message)
-        
-        ## verbose
-        if not isinstance (self._verbose, int):
-            message = head+'verbose must be an integer.'
-            raise InvalidArguments (message)
-        
     def _print_header (self):
 
         ''' print header
@@ -313,7 +271,7 @@ class Fitter (object):
         
             :type  uhistos: a dictionary
             :param uhistos: updated histograms from all dtypes
-[            
+            
             :type  template: a dictionary
             :param template: MC histogram {'H':H, 'H2':H2}
             
@@ -363,7 +321,7 @@ class Fitter (object):
                 settings ['fix_'+param]   = True
             elif user.included:
                 settings ['limit_'+param] = (user.lower_limit, user.upper_limit)
-                settings ['error_'+param] = user.error                
+                settings ['error_'+param] = user.error
         settings ['print_level'] = 1 if self._verbose > 3 else -1
         settings ['errordef']    = 0.5
         return settings
@@ -398,6 +356,8 @@ class Fitter (object):
         same = {}
         for param in self._params:
             same [param] = params [param] == self._params [param]
+            if not same[param]:
+                print ('fitter::check_params: {0} is changed '.format (param))
         if self._verbose > 1: self._print_line (params, same)
         return 
     
@@ -452,8 +412,9 @@ class Fitter (object):
         ### update histogram with these params
         uhistos = self._lib.collect_base_histograms (params)
         uhistos = self._lib.apply_hplanes (uhistos, self._temp.hplanes, params)
-        template = Map ({'H' :np.array (sum ([ uhistos[dtype]['H'] for dtype in uhistos ])),
-                         'H2': np.array (sum ([ uhistos[dtype]['H2'] for dtype in uhistos ])) })
+        uhistos = self._lib.scale_histos (uhistos, params)
+        template = Map ({  'H':sum ([uhistos[dtype]['H']  for dtype in uhistos]),
+                          'H2':sum ([uhistos[dtype]['H2'] for dtype in uhistos]) })
 
         ### calculate test statistics
         self._LH.set_histos (uhistos)
@@ -465,7 +426,6 @@ class Fitter (object):
         ### print outs
         if self._verbose > 3:
             self._print_rates (uhistos, template, rawts)
-
         ### save results if needed
         if ts < self.tsvalue:
             self.tsvalue = ts

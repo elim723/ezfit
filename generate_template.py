@@ -17,15 +17,36 @@
 ####       However, one can add more arguments to gain
 ####       access to the flexibility of the tool. 
 ####
+#### This script does the following procedures:
+####
+#### 0. Initialize Template instance 
+####
+#### TO OBTAIN MC TEMPLATE
+#### 1. Set baseline histograms
+#### 2. Set hyperplane objects for all data types
+#### 3. Multiply baseline histogram by factors
+####
+#### TO OBTAIN DATA HISTO
+#### 4. Get data histogram
+####
+#### TO COMPARE DATA AND MC BEFORE FITTING
+#### 5. Evaluate chi2 out of the box
+####
+#### TO SAVE
+#### 6. Pickle template instance
 ###############################################################
 
 from __future__ import print_function
 from optparse import OptionParser
-from template import Template
-import numpy as np
 import time, os, cPickle, socket
+import numpy as np
 
+## classes for template
+from template import Template
+from nuparams import Nuparams
+from likelihood import Likelihood
 from misc import eedges, zedges, pedges
+from misc import Toolbox
 
 ## ignore RuntimeWarning
 import warnings
@@ -60,11 +81,12 @@ parser.add_option ("--fit_data", action="store_true", default=False,
 ###########################################
 #### define more arguments
 ###########################################
-start_time = time.time()
-
 fit_data         = options.fit_data
-neutrinos        = ['numucc', 'nuecc', 'nutaucc', 'numunc', 'nuenc', 'nutaunc']
-backgrounds      = ['noise', 'muon']
+members          = ['numucc', 'nuecc', 'nutaucc', 'numunc',
+                    'nuenc', 'nutaunc', 'noise', 'muon']
+edges            = {'e':eedges,
+                    'z':zedges,
+                    'p':pedges }
 
 pdictpath        = os.path.dirname(os.path.abspath( __file__ )) + \
                    '/../pickled_files/'
@@ -78,28 +100,101 @@ inverted         = options.inverted
 verbose          = options.verbose
 
 ###########################################
-#### creat temp object
+#### check file/path before work
 ###########################################
-temp = Template (fit_data=fit_data,
-                 neutrinos=neutrinos,
-                 backgrounds=backgrounds,
-                 eedges=eedges,
-                 zedges=zedges,
-                 pedges=pedges,
-                 pdictpath=pdictpath,
-                 nuparam_textfile=nuparam_textfile,
-                 outfile=outfile,
-                 matter=matter,
-                 oscnc=oscnc,
-                 inverted=inverted,
-                 verbose=verbose)
+toolbox = Toolbox ()
+## does nuparam_textfile exist?
+toolbox.check_file (nuparam_textfile)
+## is pdictpath valid?
+toolbox.check_path (pdictpath)
+## is outdir valid?
+toolbox.check_path (os.path.split (outfile)[0])
+
+start_time = time.time()
+###########################################
+#### Step 0: initialize
+###########################################
+print ('#### Initializing template ...')
+print ('####')
+
+## initialize template and nuparams
+temp = Template (verbose=verbose)
+
+## set up nuparams
+temp.nufile = nuparam_textfile
+temp.inverted = inverted
+nuparams = Nuparams (nuparam_textfile,
+                     isinverted=inverted)
+print ('{0}'.format (nuparams))
+seeded   = nuparams.extract_params ('seeded')
+injected = nuparams.extract_params ('injected')
 
 ###########################################
-#### save temp object
+#### Step 1: get baseline histograms
 ###########################################
+print ('#### Setting baseline histograms ...')
+print ('####')
+
+## set up properties needed 
+temp.ppath   = pdictpath
+temp.members = members
+temp.edges   = edges
+temp.oscnc   = oscnc
+temp.matter  = matter
+
+## set baseline histograms 
+library, bhistos = temp.get_baseline_histograms (seeded)
+temp.bhistos = bhistos
+
+###########################################
+#### Step 2: get hyperplanes
+###########################################
+print ('#### Setting hyperplane objects ...')
+print ('####')
+
+temp.hplanes = library.get_hplanes (nuparams,
+                                    verbose=verbose)
+
+###########################################
+#### Step 3: get MC template
+###########################################
+print ('#### Getting MC template ...')
+print ('####')
+
+mhistos, mc = temp.get_template (seeded, library, bhistos)
+temp.mhistos  = mhistos
+temp.template = mc
+
+###########################################
+#### Step 4: get data histogram to be fit
+###########################################
+print ('#### Getting data histogram ...')
+print ('####')
+
+## set up information needed
+data = temp.get_data (injected, fit_data,
+                      nuparams.diff_injected_seeded ())
+
+###########################################
+#### Step 5: calculate chi2 before fit
+###########################################
+print ('#### Evaluating chi2 out of the box ...')
+print ('####')
+
+LH = Likelihood (data, 'modchi2',
+                 verbose=verbose )
+LH.set_histos (mhistos)
+ts, bints, As = LH.get_ts ()
+print ('#### modified chi2: {0}'.format (2*ts))
+
+###########################################
+#### Step 6: save temp object
+###########################################
+temp.outfile = outfile
 pstring = cPickle.dumps (temp)
-with open (temp.info ('outfile'), 'wb') as f:
+with open (outfile, 'wb') as f:
     cPickle.dump (pstring, f, protocol=2)
 f.close ()
 
+print ('#### ################################################')
 print (' ... it took {0} minuites'.format ((time.time() - start_time)/60.))

@@ -89,8 +89,8 @@ def get_histos (params, filenames):
         histo = cPickle.loads (histo)
         ### calculate comparisons in cascade/track
         results [param] = compare (histo.template, histo.dhisto)
-    edges = {'x': np.log10 (histo.info ('eedges')),
-             'y': np.cos (histo.info ('zedges'))[::-1]}
+    edges = {'x': np.log10 (histo.edges['e']),
+             'y': np.cos (histo.edges['z'])[::-1]}
     logger.info ('#### ')
     return results, edges
 
@@ -169,8 +169,8 @@ def plot_effects (param, lower, upper, **kwargs):
 #### Everything starts here :)
 ###########################################
 #### get lower / upper histograms
-lowers = sorted (glob (indir + '/*lower*.p'))
-uppers = sorted (glob (indir + '/*upper*.p'))
+lowers = sorted (glob (indir + '/histoeffect*lower*.p'))
+uppers = sorted (glob (indir + '/histoeffect*upper*.p'))
 params = [ param for param in labels['sys'] for lower in lowers if param in lower ]
 
 logger.info ('########################################')

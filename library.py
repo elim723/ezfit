@@ -16,6 +16,7 @@
 from __future__ import print_function
 from copy import deepcopy
 import numpy as np
+import time
 
 from misc import get_sets, Map, InvalidArguments
 from weightcalculator import WeightCalculator
@@ -290,7 +291,7 @@ class Library (object):
                         
                 weights = member.get_weights (params, weighter=weighter)
                 H, H2 = member.get_histogram (self._edges, weights=weights)
-                del weighter
+
                 return Map ({'H':H, 'H2':H2})
 
         def _get_sys_histograms (self, dtype, params, hparams, default,
@@ -431,7 +432,8 @@ class Library (object):
                     :return  histos: a dictionary
                              histos: all baseline histograms
                 '''
-
+                start_time = time.time ()
+                
                 ## collect baseline histograms
                 histos = Map ({})
                 for dtype in self._dtypes:
@@ -440,6 +442,8 @@ class Library (object):
                         histos [dtype] = self._get_histogram (member, params, isbaseline=True,
                                                               matter=matter, oscnc=oscnc)
                 if self._verbose > 1: print ('####')
+
+                dtime = (time.time () - start_time)/60.
                 return histos
 
         def collect_sys_histograms (self, dtype, params, hparams,
@@ -561,9 +565,10 @@ class Library (object):
                     :return histos: a dictionary
                             histos: all systematic histograms from this data type
                 '''
-
+                
                 ## return if not nunc
-                if not 'nc' in dtype: return histos[dtype]
+                if not 'nc' in dtype:
+                        return histos[dtype]
 
                 ## massage nc
                 nchistos = Map ({})
@@ -573,7 +578,31 @@ class Library (object):
                                            'H2': sum ([ histos[ncdtype][setid]['H2']
                                                         for ncdtype in ncdtypes ]) }
                 return nchistos
-                        
+
+        def scale_histos (self, histos, params):
+
+                ''' scale histograms by appropriate factors
+
+                    :type  histos: a dictionary
+                    :param histos: histogram to be scaled
+
+                    :type  params: a dictionary
+                    :param params: values of floating parameters
+                '''
+
+                shistos = Map ({})
+
+                for dtype in histos:
+                        ## get the normalization factor
+                        key = 'atmmu' if 'muon' in dtype else 'noise' if 'noise' in dtype else 'numu'
+                        norm = params['norm_nutau'] if 'nutau' in dtype else \
+                               params['norm_nc'] if 'nc' in dtype else 1.
+                        norm *= params['norm_'+key] * seconds_per_year * params['nyears']
+                        ## scale this histogram
+                        shistos[dtype] = {'H' : histos[dtype]['H'] * norm,
+                                          'H2': histos[dtype]['H2'] * norm**2}
+                return shistos
+        
         def apply_hplanes (self, bhistos, hplanes, params):
 
                 ''' multiply hyperplane factor to each member template

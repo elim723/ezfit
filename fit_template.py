@@ -17,11 +17,11 @@
 
 from __future__ import print_function
 from optparse import OptionParser
-import cPickle, socket, time
+import cPickle, socket, time, os
 from copy import deepcopy
 import numpy as np
 
-from misc import Map
+from misc import Map, Toolbox
 from fitter import Fitter
 from nuparams import Nuparams
 from likelihood import Likelihood
@@ -73,6 +73,18 @@ def get_params (nuparams, dm31, theta23, norm_nutau):
         :type  nuparams: a Nuparams object
         :param nuparams: all user's input values
 
+        :type  dm31: float or None
+        :param dm31: If not None,
+                     value of dm31 to be fixed
+
+        :type  theta23: float or None
+        :param theta23: If not None,
+                        value of theta23 to be fixed
+
+        :type  norm_nutau: float or None
+        :param norm_nutau: If not None,
+                           value of norm_nutau to be fixed
+
         :return fparams: a numpy array / list
                 fparams: oscillation parameters to be fixed
 
@@ -92,13 +104,10 @@ def get_params (nuparams, dm31, theta23, norm_nutau):
         params [p] = fixed_params [p]
     return fparams, params
 
-def get_lib_histos (dtypes, params):
-
+def get_lib_histos (params):
+    
     ''' get library, hyperplaned histos,
-        and data histogram
-
-        :type  dtypes: a numpy array / list
-        :param dtypes: data types / members included
+        and data histogram based on input parameters
     
         :type  params: a dictionary
         :param params: values of parameters from
@@ -117,12 +126,12 @@ def get_lib_histos (dtypes, params):
                        : data histogram and variance
     '''
 
-    lib, bhistos = temp.get_baseline_histograms (dtypes, params)
-    mhistos, mc, var = temp.get_template (dtypes, params, lib, bhistos)
+    lib, bhistos = temp.get_baseline_histograms (params)
+    mhistos, template = temp.get_template (params, lib, bhistos)
     dhisto = temp.dhisto
     if verbose > 0:
         temp._print_rates ('hplaned', mhistos)
-        temp._print_rates ('template', {'H':mc, 'H2':var})
+        temp._print_rates ('template', template)
         temp._print_rates ('data', dhisto)
     return lib, mhistos, dhisto
 
@@ -234,6 +243,8 @@ def print_result (output):
     print ('####')
     line = '#### {0:20} | {1:20.10f}'
     for key in output ['params']:
+        if verbose < 3 and \
+           key in ['dm31', 'theta23', 'norm_nutau']: continue
         value = round (output ['params'][key], 10)
         print (line.format (key.center (10), value))
     print ('####')
@@ -263,48 +274,68 @@ parser.add_option ("--verbose", type="int", default = 1,
 (options, args) = parser.parse_args()
 
 ###########################################
+#### define user's arguements
+###########################################
+dm31       = options.dm31_grid
+theta23    = options.theta23_grid
+norm_nutau = options.norm_nutau_grid
+
+test_statistics = options.test_statistics
+verbose         = options.verbose
+
+outfile          = options.outfile
+tempfile         = options.template
+nuparam_textfile = options.nuparam_textfile
+
+###########################################
+#### check file/path before work
+###########################################
+toolbox = Toolbox ()
+## does template file exist?
+toolbox.check_file (tempfile)
+## if nuparam_textfile, does it exist?
+if nuparam_textfile: toolbox.check_file (nuparam_textfile)
+## is outdir valid?
+toolbox.check_path (os.path.split (outfile)[0])
+
+###########################################
 #### define more arguments
 ###########################################
-
-### misc
-verbose = options.verbose
-outfile = options.outfile
+### count time
+start_time = time.time ()
 
 ### essential files
-tempfile = options.template
 with open (tempfile, 'rb') as f:
     temp = cPickle.load (f)
 f.close ()
 temp = cPickle.loads (temp)
-info = temp.info
 
 ### set nuparams
-nuparam_textfile= options.nuparam_textfile
 # if not specified, get the textfile from template
 if not nuparam_textfile:
-    nuparam_textfile = temp.info ('nuparam_textfile')
+    nuparam_textfile = temp.nufile
 nuparams = Nuparams (nuparam_textfile,
-                     isinverted=info ('inverted'))
+                     isinverted=temp.inverted)
+print ('{0}'.format (nuparams))
 
 ### set parameter dictionary
-dm31 = options.dm31_grid
-theta23 = options.theta23_grid
-norm_nutau = options.norm_nutau_grid
-fparams, params = get_params (nuparams, dm31, theta23, norm_nutau)
+fparams, params = get_params (nuparams, dm31,
+                              theta23, norm_nutau)
 
 ### get library, hplaned, data histograms
-dtypes = info.get_datatypes ()
-lib, mhistos, dhisto = get_lib_histos (dtypes, params)
+lib, mhistos, dhisto = get_lib_histos (params)
 
 ## set likelihood
-test_statistics = options.test_statistics
-LH = get_likelihood (test_statistics, dhisto, dtypes, lib, params)
+LH = get_likelihood (test_statistics, dhisto,
+                     temp.members, lib, params)
 LH.set_histos (mhistos)
 ts, bints, As = LH.get_ts ()
 if verbose > 0:
     print ('#### {0}: {1}'.format (test_statistics, 2*ts))
+    nmin = round ((time.time () - start_time) / 60., 2)
+    print ('#### building initial template takes {0} minuites..'.format (nmin))
     print ('####')
-
+    
 ###########################################
 #### start fitter
 ###########################################
@@ -331,4 +362,4 @@ f.close ()
 if verbose < 4:
     print_result (output)
 
-print('  .... it takes {0} minuites.'.format ( (time.time() - start_time)/60. ))
+print('#### fitting takes {0} minuites.'.format ( (time.time() - start_time)/60. ))

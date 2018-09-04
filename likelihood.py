@@ -361,10 +361,10 @@ class Likelihood (object):
                        for j in np.arange (len (self._dtypes)) ])
 
         ## print info
-        if self._verbose > 3: 
-            print ('#### +----------- {0}th bin ({1}) -----------+'.format (nbin,
-                                                                            index))
-            print ('#### +---- di, mci: {0}, {1}'.format(di, fi))
+        #if self._verbose > 3: 
+        #    print ('#### +----------- {0}th bin ({1}) -----------+'.format (nbin,
+        #                                                                    index))
+        #    print ('#### +---- di, mci: {0}, {1}'.format(di, fi))
         
         ## determine TS
         if 'chi2' in self._method:
@@ -373,11 +373,11 @@ class Likelihood (object):
             An = None
         else:
             ## determine likelihood
-            ts, An = self._calculate_llh (nbin, index, di, fi)
+            ts, An = self._calculate_llh (nbin, di, fi)
         
         ## print info
-        if self._verbose > 3: 
-            print ('#### +---- {0}: {1}'.format (self._method, 2*ts))
+        #if self._verbose > 3: 
+        #    print ('#### +---- {0}: {1}'.format (self._method, 2*ts))
 
         return ts, An
     

@@ -255,7 +255,7 @@ class Member (object):
         def get_weights (self, params, weighter=None,
                          matter=True, oscnc=False, pmap=None):
 
-                ''' get weights for each events
+                ''' get weights for each events (all in Hz)
 
                     :type  params: a dictionary
                     :param params: values of floating parameters
@@ -277,26 +277,17 @@ class Member (object):
                             weights: weights for each event
                 '''
 
-                ## normalization factors
-                livetime = seconds_per_year * params ['nyears']
-
                 ## data weights
                 if 'data' in self._dtype:
-                        ## return equal weights if data
                         greco_livetime = seconds_per_year * greco_nyears
-                        return np.ones (len (self._events.reco.e)) / greco_livetime * livetime
+                        return np.ones (len (self._events.reco.e)) / greco_livetime
 
                 ## define weighter if not parsed
                 if not weighter:
                         weighter = self.get_weighter (params, matter=matter, oscnc=oscnc, pmap=pmap)
 
-                ## normalization factors
-                key = 'atmmu' if 'muon' in self._dtype else 'noise' if 'noise' in self._dtype else 'numu'
-                norm = params['norm_nutau'] if 'nutau' in self._dtype else \
-                       params['norm_nc'] if 'nc' in self._dtype else 1
-                norm *= params['norm_'+key] * livetime
                 ## get weights
-                return norm * weighter.reweight (params)
+                return weighter.reweight (params)
 
         def get_histogram (self, edges, weights=[], params=None):
 
@@ -325,7 +316,7 @@ class Member (object):
                 e, z, pid = np.array (reco.e), np.array (reco.z), np.array (reco.pid)
                 w = self.get_weights (params=params) if len (weights) == 0 else \
                                               np.array (weights)
-
+        
                 #### make sure event variables are finite
                 finite = np.logical_and (np.logical_and (np.logical_and (np.isfinite (e), np.isfinite (z)),
                                                          np.isfinite (w)), np.isfinite (pid))

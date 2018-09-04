@@ -1,0 +1,216 @@
+JOB heffect_temp_absorption_lower /data/condor_builds/users/elims/ezfits/clean_ezfit//dagman/temp.submit
+VARS heffect_temp_absorption_lower JOBNAME="heffect_temp_absorption_lower" command="python /data/condor_builds/users/elims/ezfits/clean_ezfit//generate_template.py --outfile /data/i3store0/users/elims/clean_fit/fits/histoeffect//histoeffect_absorption_lower.p --nuparam_textfile /data/i3store0/users/elims/clean_fit/nuparam_textfiles/histoeffect//absorption_lower.txt"
+PRIORITY heffect_temp_absorption_lower 8
+JOB heffect_fit_absorption_lower /data/condor_builds/users/elims/ezfits/clean_ezfit//dagman/fit.submit
+VARS heffect_fit_absorption_lower JOBNAME="heffect_fit_absorption_lower" command="python /data/condor_builds/users/elims/ezfits/clean_ezfit//fit_template.py --test_statistics modchi2 --verbose 1 --template /data/i3store0/users/elims/clean_fit/fits/histoeffect//histoeffect_absorption_lower.p --outfile /data/i3store0/users/elims/clean_fit/fits/histoeffect//fit_absorption_lower.p --verbose 4"
+PARENT heffect_temp_absorption_lower CHILD heffect_fit_absorption_lower
+JOB heffect_temp_absorption_upper /data/condor_builds/users/elims/ezfits/clean_ezfit//dagman/temp.submit
+VARS heffect_temp_absorption_upper JOBNAME="heffect_temp_absorption_upper" command="python /data/condor_builds/users/elims/ezfits/clean_ezfit//generate_template.py --outfile /data/i3store0/users/elims/clean_fit/fits/histoeffect//histoeffect_absorption_upper.p --nuparam_textfile /data/i3store0/users/elims/clean_fit/nuparam_textfiles/histoeffect//absorption_upper.txt"
+PRIORITY heffect_temp_absorption_upper 8
+JOB heffect_fit_absorption_upper /data/condor_builds/users/elims/ezfits/clean_ezfit//dagman/fit.submit
+VARS heffect_fit_absorption_upper JOBNAME="heffect_fit_absorption_upper" command="python /data/condor_builds/users/elims/ezfits/clean_ezfit//fit_template.py --test_statistics modchi2 --verbose 1 --template /data/i3store0/users/elims/clean_fit/fits/histoeffect//histoeffect_absorption_upper.p --outfile /data/i3store0/users/elims/clean_fit/fits/histoeffect//fit_absorption_upper.p --verbose 4"
+PARENT heffect_temp_absorption_upper CHILD heffect_fit_absorption_upper
+JOB heffect_temp_axm_qe_lower /data/condor_builds/users/elims/ezfits/clean_ezfit//dagman/temp.submit
+VARS heffect_temp_axm_qe_lower JOBNAME="heffect_temp_axm_qe_lower" command="python /data/condor_builds/users/elims/ezfits/clean_ezfit//generate_template.py --outfile /data/i3store0/users/elims/clean_fit/fits/histoeffect//histoeffect_axm_qe_lower.p --nuparam_textfile /data/i3store0/users/elims/clean_fit/nuparam_textfiles/histoeffect//axm_qe_lower.txt"
+PRIORITY heffect_temp_axm_qe_lower 8
+JOB heffect_fit_axm_qe_lower /data/condor_builds/users/elims/ezfits/clean_ezfit//dagman/fit.submit
+VARS heffect_fit_axm_qe_lower JOBNAME="heffect_fit_axm_qe_lower" command="python /data/condor_builds/users/elims/ezfits/clean_ezfit//fit_template.py --test_statistics modchi2 --verbose 1 --template /data/i3store0/users/elims/clean_fit/fits/histoeffect//histoeffect_axm_qe_lower.p --outfile /data/i3store0/users/elims/clean_fit/fits/histoeffect//fit_axm_qe_lower.p --verbose 4"
+PARENT heffect_temp_axm_qe_lower CHILD heffect_fit_axm_qe_lower
+JOB heffect_temp_axm_qe_upper /data/condor_builds/users/elims/ezfits/clean_ezfit//dagman/temp.submit
+VARS heffect_temp_axm_qe_upper JOBNAME="heffect_temp_axm_qe_upper" command="python /data/condor_builds/users/elims/ezfits/clean_ezfit//generate_template.py --outfile /data/i3store0/users/elims/clean_fit/fits/histoeffect//histoeffect_axm_qe_upper.p --nuparam_textfile /data/i3store0/users/elims/clean_fit/nuparam_textfiles/histoeffect//axm_qe_upper.txt"
+PRIORITY heffect_temp_axm_qe_upper 8
+JOB heffect_fit_axm_qe_upper /data/condor_builds/users/elims/ezfits/clean_ezfit//dagman/fit.submit
+VARS heffect_fit_axm_qe_upper JOBNAME="heffect_fit_axm_qe_upper" command="python /data/condor_builds/users/elims/ezfits/clean_ezfit//fit_template.py --test_statistics modchi2 --verbose 1 --template /data/i3store0/users/elims/clean_fit/fits/histoeffect//histoeffect_axm_qe_upper.p --outfile /data/i3store0/users/elims/clean_fit/fits/histoeffect//fit_axm_qe_upper.p --verbose 4"
+PARENT heffect_temp_axm_qe_upper CHILD heffect_fit_axm_qe_upper
+JOB heffect_temp_axm_res_lower /data/condor_builds/users/elims/ezfits/clean_ezfit//dagman/temp.submit
+VARS heffect_temp_axm_res_lower JOBNAME="heffect_temp_axm_res_lower" command="python /data/condor_builds/users/elims/ezfits/clean_ezfit//generate_template.py --outfile /data/i3store0/users/elims/clean_fit/fits/histoeffect//histoeffect_axm_res_lower.p --nuparam_textfile /data/i3store0/users/elims/clean_fit/nuparam_textfiles/histoeffect//axm_res_lower.txt"
+PRIORITY heffect_temp_axm_res_lower 8
+JOB heffect_fit_axm_res_lower /data/condor_builds/users/elims/ezfits/clean_ezfit//dagman/fit.submit
+VARS heffect_fit_axm_res_lower JOBNAME="heffect_fit_axm_res_lower" command="python /data/condor_builds/users/elims/ezfits/clean_ezfit//fit_template.py --test_statistics modchi2 --verbose 1 --template /data/i3store0/users/elims/clean_fit/fits/histoeffect//histoeffect_axm_res_lower.p --outfile /data/i3store0/users/elims/clean_fit/fits/histoeffect//fit_axm_res_lower.p --verbose 4"
+PARENT heffect_temp_axm_res_lower CHILD heffect_fit_axm_res_lower
+JOB heffect_temp_axm_res_upper /data/condor_builds/users/elims/ezfits/clean_ezfit//dagman/temp.submit
+VARS heffect_temp_axm_res_upper JOBNAME="heffect_temp_axm_res_upper" command="python /data/condor_builds/users/elims/ezfits/clean_ezfit//generate_template.py --outfile /data/i3store0/users/elims/clean_fit/fits/histoeffect//histoeffect_axm_res_upper.p --nuparam_textfile /data/i3store0/users/elims/clean_fit/nuparam_textfiles/histoeffect//axm_res_upper.txt"
+PRIORITY heffect_temp_axm_res_upper 8
+JOB heffect_fit_axm_res_upper /data/condor_builds/users/elims/ezfits/clean_ezfit//dagman/fit.submit
+VARS heffect_fit_axm_res_upper JOBNAME="heffect_fit_axm_res_upper" command="python /data/condor_builds/users/elims/ezfits/clean_ezfit//fit_template.py --test_statistics modchi2 --verbose 1 --template /data/i3store0/users/elims/clean_fit/fits/histoeffect//histoeffect_axm_res_upper.p --outfile /data/i3store0/users/elims/clean_fit/fits/histoeffect//fit_axm_res_upper.p --verbose 4"
+PARENT heffect_temp_axm_res_upper CHILD heffect_fit_axm_res_upper
+JOB heffect_temp_barr_nubar_ratio_lower /data/condor_builds/users/elims/ezfits/clean_ezfit//dagman/temp.submit
+VARS heffect_temp_barr_nubar_ratio_lower JOBNAME="heffect_temp_barr_nubar_ratio_lower" command="python /data/condor_builds/users/elims/ezfits/clean_ezfit//generate_template.py --outfile /data/i3store0/users/elims/clean_fit/fits/histoeffect//histoeffect_barr_nubar_ratio_lower.p --nuparam_textfile /data/i3store0/users/elims/clean_fit/nuparam_textfiles/histoeffect//barr_nubar_ratio_lower.txt"
+PRIORITY heffect_temp_barr_nubar_ratio_lower 8
+JOB heffect_fit_barr_nubar_ratio_lower /data/condor_builds/users/elims/ezfits/clean_ezfit//dagman/fit.submit
+VARS heffect_fit_barr_nubar_ratio_lower JOBNAME="heffect_fit_barr_nubar_ratio_lower" command="python /data/condor_builds/users/elims/ezfits/clean_ezfit//fit_template.py --test_statistics modchi2 --verbose 1 --template /data/i3store0/users/elims/clean_fit/fits/histoeffect//histoeffect_barr_nubar_ratio_lower.p --outfile /data/i3store0/users/elims/clean_fit/fits/histoeffect//fit_barr_nubar_ratio_lower.p --verbose 4"
+PARENT heffect_temp_barr_nubar_ratio_lower CHILD heffect_fit_barr_nubar_ratio_lower
+JOB heffect_temp_barr_nubar_ratio_upper /data/condor_builds/users/elims/ezfits/clean_ezfit//dagman/temp.submit
+VARS heffect_temp_barr_nubar_ratio_upper JOBNAME="heffect_temp_barr_nubar_ratio_upper" command="python /data/condor_builds/users/elims/ezfits/clean_ezfit//generate_template.py --outfile /data/i3store0/users/elims/clean_fit/fits/histoeffect//histoeffect_barr_nubar_ratio_upper.p --nuparam_textfile /data/i3store0/users/elims/clean_fit/nuparam_textfiles/histoeffect//barr_nubar_ratio_upper.txt"
+PRIORITY heffect_temp_barr_nubar_ratio_upper 8
+JOB heffect_fit_barr_nubar_ratio_upper /data/condor_builds/users/elims/ezfits/clean_ezfit//dagman/fit.submit
+VARS heffect_fit_barr_nubar_ratio_upper JOBNAME="heffect_fit_barr_nubar_ratio_upper" command="python /data/condor_builds/users/elims/ezfits/clean_ezfit//fit_template.py --test_statistics modchi2 --verbose 1 --template /data/i3store0/users/elims/clean_fit/fits/histoeffect//histoeffect_barr_nubar_ratio_upper.p --outfile /data/i3store0/users/elims/clean_fit/fits/histoeffect//fit_barr_nubar_ratio_upper.p --verbose 4"
+PARENT heffect_temp_barr_nubar_ratio_upper CHILD heffect_fit_barr_nubar_ratio_upper
+JOB heffect_temp_barr_uphor_ratio_lower /data/condor_builds/users/elims/ezfits/clean_ezfit//dagman/temp.submit
+VARS heffect_temp_barr_uphor_ratio_lower JOBNAME="heffect_temp_barr_uphor_ratio_lower" command="python /data/condor_builds/users/elims/ezfits/clean_ezfit//generate_template.py --outfile /data/i3store0/users/elims/clean_fit/fits/histoeffect//histoeffect_barr_uphor_ratio_lower.p --nuparam_textfile /data/i3store0/users/elims/clean_fit/nuparam_textfiles/histoeffect//barr_uphor_ratio_lower.txt"
+PRIORITY heffect_temp_barr_uphor_ratio_lower 8
+JOB heffect_fit_barr_uphor_ratio_lower /data/condor_builds/users/elims/ezfits/clean_ezfit//dagman/fit.submit
+VARS heffect_fit_barr_uphor_ratio_lower JOBNAME="heffect_fit_barr_uphor_ratio_lower" command="python /data/condor_builds/users/elims/ezfits/clean_ezfit//fit_template.py --test_statistics modchi2 --verbose 1 --template /data/i3store0/users/elims/clean_fit/fits/histoeffect//histoeffect_barr_uphor_ratio_lower.p --outfile /data/i3store0/users/elims/clean_fit/fits/histoeffect//fit_barr_uphor_ratio_lower.p --verbose 4"
+PARENT heffect_temp_barr_uphor_ratio_lower CHILD heffect_fit_barr_uphor_ratio_lower
+JOB heffect_temp_barr_uphor_ratio_upper /data/condor_builds/users/elims/ezfits/clean_ezfit//dagman/temp.submit
+VARS heffect_temp_barr_uphor_ratio_upper JOBNAME="heffect_temp_barr_uphor_ratio_upper" command="python /data/condor_builds/users/elims/ezfits/clean_ezfit//generate_template.py --outfile /data/i3store0/users/elims/clean_fit/fits/histoeffect//histoeffect_barr_uphor_ratio_upper.p --nuparam_textfile /data/i3store0/users/elims/clean_fit/nuparam_textfiles/histoeffect//barr_uphor_ratio_upper.txt"
+PRIORITY heffect_temp_barr_uphor_ratio_upper 8
+JOB heffect_fit_barr_uphor_ratio_upper /data/condor_builds/users/elims/ezfits/clean_ezfit//dagman/fit.submit
+VARS heffect_fit_barr_uphor_ratio_upper JOBNAME="heffect_fit_barr_uphor_ratio_upper" command="python /data/condor_builds/users/elims/ezfits/clean_ezfit//fit_template.py --test_statistics modchi2 --verbose 1 --template /data/i3store0/users/elims/clean_fit/fits/histoeffect//histoeffect_barr_uphor_ratio_upper.p --outfile /data/i3store0/users/elims/clean_fit/fits/histoeffect//fit_barr_uphor_ratio_upper.p --verbose 4"
+PARENT heffect_temp_barr_uphor_ratio_upper CHILD heffect_fit_barr_uphor_ratio_upper
+JOB heffect_temp_coin_lower /data/condor_builds/users/elims/ezfits/clean_ezfit//dagman/temp.submit
+VARS heffect_temp_coin_lower JOBNAME="heffect_temp_coin_lower" command="python /data/condor_builds/users/elims/ezfits/clean_ezfit//generate_template.py --outfile /data/i3store0/users/elims/clean_fit/fits/histoeffect//histoeffect_coin_lower.p --nuparam_textfile /data/i3store0/users/elims/clean_fit/nuparam_textfiles/histoeffect//coin_lower.txt"
+PRIORITY heffect_temp_coin_lower 8
+JOB heffect_fit_coin_lower /data/condor_builds/users/elims/ezfits/clean_ezfit//dagman/fit.submit
+VARS heffect_fit_coin_lower JOBNAME="heffect_fit_coin_lower" command="python /data/condor_builds/users/elims/ezfits/clean_ezfit//fit_template.py --test_statistics modchi2 --verbose 1 --template /data/i3store0/users/elims/clean_fit/fits/histoeffect//histoeffect_coin_lower.p --outfile /data/i3store0/users/elims/clean_fit/fits/histoeffect//fit_coin_lower.p --verbose 4"
+PARENT heffect_temp_coin_lower CHILD heffect_fit_coin_lower
+JOB heffect_temp_coin_upper /data/condor_builds/users/elims/ezfits/clean_ezfit//dagman/temp.submit
+VARS heffect_temp_coin_upper JOBNAME="heffect_temp_coin_upper" command="python /data/condor_builds/users/elims/ezfits/clean_ezfit//generate_template.py --outfile /data/i3store0/users/elims/clean_fit/fits/histoeffect//histoeffect_coin_upper.p --nuparam_textfile /data/i3store0/users/elims/clean_fit/nuparam_textfiles/histoeffect//coin_upper.txt"
+PRIORITY heffect_temp_coin_upper 8
+JOB heffect_fit_coin_upper /data/condor_builds/users/elims/ezfits/clean_ezfit//dagman/fit.submit
+VARS heffect_fit_coin_upper JOBNAME="heffect_fit_coin_upper" command="python /data/condor_builds/users/elims/ezfits/clean_ezfit//fit_template.py --test_statistics modchi2 --verbose 1 --template /data/i3store0/users/elims/clean_fit/fits/histoeffect//histoeffect_coin_upper.p --outfile /data/i3store0/users/elims/clean_fit/fits/histoeffect//fit_coin_upper.p --verbose 4"
+PARENT heffect_temp_coin_upper CHILD heffect_fit_coin_upper
+JOB heffect_temp_dm31_lower /data/condor_builds/users/elims/ezfits/clean_ezfit//dagman/temp.submit
+VARS heffect_temp_dm31_lower JOBNAME="heffect_temp_dm31_lower" command="python /data/condor_builds/users/elims/ezfits/clean_ezfit//generate_template.py --outfile /data/i3store0/users/elims/clean_fit/fits/histoeffect//histoeffect_dm31_lower.p --nuparam_textfile /data/i3store0/users/elims/clean_fit/nuparam_textfiles/histoeffect//dm31_lower.txt"
+PRIORITY heffect_temp_dm31_lower 8
+JOB heffect_fit_dm31_lower /data/condor_builds/users/elims/ezfits/clean_ezfit//dagman/fit.submit
+VARS heffect_fit_dm31_lower JOBNAME="heffect_fit_dm31_lower" command="python /data/condor_builds/users/elims/ezfits/clean_ezfit//fit_template.py --test_statistics modchi2 --verbose 1 --template /data/i3store0/users/elims/clean_fit/fits/histoeffect//histoeffect_dm31_lower.p --outfile /data/i3store0/users/elims/clean_fit/fits/histoeffect//fit_dm31_lower.p --verbose 4"
+PARENT heffect_temp_dm31_lower CHILD heffect_fit_dm31_lower
+JOB heffect_temp_dm31_upper /data/condor_builds/users/elims/ezfits/clean_ezfit//dagman/temp.submit
+VARS heffect_temp_dm31_upper JOBNAME="heffect_temp_dm31_upper" command="python /data/condor_builds/users/elims/ezfits/clean_ezfit//generate_template.py --outfile /data/i3store0/users/elims/clean_fit/fits/histoeffect//histoeffect_dm31_upper.p --nuparam_textfile /data/i3store0/users/elims/clean_fit/nuparam_textfiles/histoeffect//dm31_upper.txt"
+PRIORITY heffect_temp_dm31_upper 8
+JOB heffect_fit_dm31_upper /data/condor_builds/users/elims/ezfits/clean_ezfit//dagman/fit.submit
+VARS heffect_fit_dm31_upper JOBNAME="heffect_fit_dm31_upper" command="python /data/condor_builds/users/elims/ezfits/clean_ezfit//fit_template.py --test_statistics modchi2 --verbose 1 --template /data/i3store0/users/elims/clean_fit/fits/histoeffect//histoeffect_dm31_upper.p --outfile /data/i3store0/users/elims/clean_fit/fits/histoeffect//fit_dm31_upper.p --verbose 4"
+PARENT heffect_temp_dm31_upper CHILD heffect_fit_dm31_upper
+JOB heffect_temp_domeff_lower /data/condor_builds/users/elims/ezfits/clean_ezfit//dagman/temp.submit
+VARS heffect_temp_domeff_lower JOBNAME="heffect_temp_domeff_lower" command="python /data/condor_builds/users/elims/ezfits/clean_ezfit//generate_template.py --outfile /data/i3store0/users/elims/clean_fit/fits/histoeffect//histoeffect_domeff_lower.p --nuparam_textfile /data/i3store0/users/elims/clean_fit/nuparam_textfiles/histoeffect//domeff_lower.txt"
+PRIORITY heffect_temp_domeff_lower 8
+JOB heffect_fit_domeff_lower /data/condor_builds/users/elims/ezfits/clean_ezfit//dagman/fit.submit
+VARS heffect_fit_domeff_lower JOBNAME="heffect_fit_domeff_lower" command="python /data/condor_builds/users/elims/ezfits/clean_ezfit//fit_template.py --test_statistics modchi2 --verbose 1 --template /data/i3store0/users/elims/clean_fit/fits/histoeffect//histoeffect_domeff_lower.p --outfile /data/i3store0/users/elims/clean_fit/fits/histoeffect//fit_domeff_lower.p --verbose 4"
+PARENT heffect_temp_domeff_lower CHILD heffect_fit_domeff_lower
+JOB heffect_temp_domeff_upper /data/condor_builds/users/elims/ezfits/clean_ezfit//dagman/temp.submit
+VARS heffect_temp_domeff_upper JOBNAME="heffect_temp_domeff_upper" command="python /data/condor_builds/users/elims/ezfits/clean_ezfit//generate_template.py --outfile /data/i3store0/users/elims/clean_fit/fits/histoeffect//histoeffect_domeff_upper.p --nuparam_textfile /data/i3store0/users/elims/clean_fit/nuparam_textfiles/histoeffect//domeff_upper.txt"
+PRIORITY heffect_temp_domeff_upper 8
+JOB heffect_fit_domeff_upper /data/condor_builds/users/elims/ezfits/clean_ezfit//dagman/fit.submit
+VARS heffect_fit_domeff_upper JOBNAME="heffect_fit_domeff_upper" command="python /data/condor_builds/users/elims/ezfits/clean_ezfit//fit_template.py --test_statistics modchi2 --verbose 1 --template /data/i3store0/users/elims/clean_fit/fits/histoeffect//histoeffect_domeff_upper.p --outfile /data/i3store0/users/elims/clean_fit/fits/histoeffect//fit_domeff_upper.p --verbose 4"
+PARENT heffect_temp_domeff_upper CHILD heffect_fit_domeff_upper
+JOB heffect_temp_forward_lower /data/condor_builds/users/elims/ezfits/clean_ezfit//dagman/temp.submit
+VARS heffect_temp_forward_lower JOBNAME="heffect_temp_forward_lower" command="python /data/condor_builds/users/elims/ezfits/clean_ezfit//generate_template.py --outfile /data/i3store0/users/elims/clean_fit/fits/histoeffect//histoeffect_forward_lower.p --nuparam_textfile /data/i3store0/users/elims/clean_fit/nuparam_textfiles/histoeffect//forward_lower.txt"
+PRIORITY heffect_temp_forward_lower 8
+JOB heffect_fit_forward_lower /data/condor_builds/users/elims/ezfits/clean_ezfit//dagman/fit.submit
+VARS heffect_fit_forward_lower JOBNAME="heffect_fit_forward_lower" command="python /data/condor_builds/users/elims/ezfits/clean_ezfit//fit_template.py --test_statistics modchi2 --verbose 1 --template /data/i3store0/users/elims/clean_fit/fits/histoeffect//histoeffect_forward_lower.p --outfile /data/i3store0/users/elims/clean_fit/fits/histoeffect//fit_forward_lower.p --verbose 4"
+PARENT heffect_temp_forward_lower CHILD heffect_fit_forward_lower
+JOB heffect_temp_forward_upper /data/condor_builds/users/elims/ezfits/clean_ezfit//dagman/temp.submit
+VARS heffect_temp_forward_upper JOBNAME="heffect_temp_forward_upper" command="python /data/condor_builds/users/elims/ezfits/clean_ezfit//generate_template.py --outfile /data/i3store0/users/elims/clean_fit/fits/histoeffect//histoeffect_forward_upper.p --nuparam_textfile /data/i3store0/users/elims/clean_fit/nuparam_textfiles/histoeffect//forward_upper.txt"
+PRIORITY heffect_temp_forward_upper 8
+JOB heffect_fit_forward_upper /data/condor_builds/users/elims/ezfits/clean_ezfit//dagman/fit.submit
+VARS heffect_fit_forward_upper JOBNAME="heffect_fit_forward_upper" command="python /data/condor_builds/users/elims/ezfits/clean_ezfit//fit_template.py --test_statistics modchi2 --verbose 1 --template /data/i3store0/users/elims/clean_fit/fits/histoeffect//histoeffect_forward_upper.p --outfile /data/i3store0/users/elims/clean_fit/fits/histoeffect//fit_forward_upper.p --verbose 4"
+PARENT heffect_temp_forward_upper CHILD heffect_fit_forward_upper
+JOB heffect_temp_gamma_lower /data/condor_builds/users/elims/ezfits/clean_ezfit//dagman/temp.submit
+VARS heffect_temp_gamma_lower JOBNAME="heffect_temp_gamma_lower" command="python /data/condor_builds/users/elims/ezfits/clean_ezfit//generate_template.py --outfile /data/i3store0/users/elims/clean_fit/fits/histoeffect//histoeffect_gamma_lower.p --nuparam_textfile /data/i3store0/users/elims/clean_fit/nuparam_textfiles/histoeffect//gamma_lower.txt"
+PRIORITY heffect_temp_gamma_lower 8
+JOB heffect_fit_gamma_lower /data/condor_builds/users/elims/ezfits/clean_ezfit//dagman/fit.submit
+VARS heffect_fit_gamma_lower JOBNAME="heffect_fit_gamma_lower" command="python /data/condor_builds/users/elims/ezfits/clean_ezfit//fit_template.py --test_statistics modchi2 --verbose 1 --template /data/i3store0/users/elims/clean_fit/fits/histoeffect//histoeffect_gamma_lower.p --outfile /data/i3store0/users/elims/clean_fit/fits/histoeffect//fit_gamma_lower.p --verbose 4"
+PARENT heffect_temp_gamma_lower CHILD heffect_fit_gamma_lower
+JOB heffect_temp_gamma_upper /data/condor_builds/users/elims/ezfits/clean_ezfit//dagman/temp.submit
+VARS heffect_temp_gamma_upper JOBNAME="heffect_temp_gamma_upper" command="python /data/condor_builds/users/elims/ezfits/clean_ezfit//generate_template.py --outfile /data/i3store0/users/elims/clean_fit/fits/histoeffect//histoeffect_gamma_upper.p --nuparam_textfile /data/i3store0/users/elims/clean_fit/nuparam_textfiles/histoeffect//gamma_upper.txt"
+PRIORITY heffect_temp_gamma_upper 8
+JOB heffect_fit_gamma_upper /data/condor_builds/users/elims/ezfits/clean_ezfit//dagman/fit.submit
+VARS heffect_fit_gamma_upper JOBNAME="heffect_fit_gamma_upper" command="python /data/condor_builds/users/elims/ezfits/clean_ezfit//fit_template.py --test_statistics modchi2 --verbose 1 --template /data/i3store0/users/elims/clean_fit/fits/histoeffect//histoeffect_gamma_upper.p --outfile /data/i3store0/users/elims/clean_fit/fits/histoeffect//fit_gamma_upper.p --verbose 4"
+PARENT heffect_temp_gamma_upper CHILD heffect_fit_gamma_upper
+JOB heffect_temp_holeice_lower /data/condor_builds/users/elims/ezfits/clean_ezfit//dagman/temp.submit
+VARS heffect_temp_holeice_lower JOBNAME="heffect_temp_holeice_lower" command="python /data/condor_builds/users/elims/ezfits/clean_ezfit//generate_template.py --outfile /data/i3store0/users/elims/clean_fit/fits/histoeffect//histoeffect_holeice_lower.p --nuparam_textfile /data/i3store0/users/elims/clean_fit/nuparam_textfiles/histoeffect//holeice_lower.txt"
+PRIORITY heffect_temp_holeice_lower 8
+JOB heffect_fit_holeice_lower /data/condor_builds/users/elims/ezfits/clean_ezfit//dagman/fit.submit
+VARS heffect_fit_holeice_lower JOBNAME="heffect_fit_holeice_lower" command="python /data/condor_builds/users/elims/ezfits/clean_ezfit//fit_template.py --test_statistics modchi2 --verbose 1 --template /data/i3store0/users/elims/clean_fit/fits/histoeffect//histoeffect_holeice_lower.p --outfile /data/i3store0/users/elims/clean_fit/fits/histoeffect//fit_holeice_lower.p --verbose 4"
+PARENT heffect_temp_holeice_lower CHILD heffect_fit_holeice_lower
+JOB heffect_temp_holeice_upper /data/condor_builds/users/elims/ezfits/clean_ezfit//dagman/temp.submit
+VARS heffect_temp_holeice_upper JOBNAME="heffect_temp_holeice_upper" command="python /data/condor_builds/users/elims/ezfits/clean_ezfit//generate_template.py --outfile /data/i3store0/users/elims/clean_fit/fits/histoeffect//histoeffect_holeice_upper.p --nuparam_textfile /data/i3store0/users/elims/clean_fit/nuparam_textfiles/histoeffect//holeice_upper.txt"
+PRIORITY heffect_temp_holeice_upper 8
+JOB heffect_fit_holeice_upper /data/condor_builds/users/elims/ezfits/clean_ezfit//dagman/fit.submit
+VARS heffect_fit_holeice_upper JOBNAME="heffect_fit_holeice_upper" command="python /data/condor_builds/users/elims/ezfits/clean_ezfit//fit_template.py --test_statistics modchi2 --verbose 1 --template /data/i3store0/users/elims/clean_fit/fits/histoeffect//histoeffect_holeice_upper.p --outfile /data/i3store0/users/elims/clean_fit/fits/histoeffect//fit_holeice_upper.p --verbose 4"
+PARENT heffect_temp_holeice_upper CHILD heffect_fit_holeice_upper
+JOB heffect_temp_muon_flux_lower /data/condor_builds/users/elims/ezfits/clean_ezfit//dagman/temp.submit
+VARS heffect_temp_muon_flux_lower JOBNAME="heffect_temp_muon_flux_lower" command="python /data/condor_builds/users/elims/ezfits/clean_ezfit//generate_template.py --outfile /data/i3store0/users/elims/clean_fit/fits/histoeffect//histoeffect_muon_flux_lower.p --nuparam_textfile /data/i3store0/users/elims/clean_fit/nuparam_textfiles/histoeffect//muon_flux_lower.txt"
+PRIORITY heffect_temp_muon_flux_lower 8
+JOB heffect_fit_muon_flux_lower /data/condor_builds/users/elims/ezfits/clean_ezfit//dagman/fit.submit
+VARS heffect_fit_muon_flux_lower JOBNAME="heffect_fit_muon_flux_lower" command="python /data/condor_builds/users/elims/ezfits/clean_ezfit//fit_template.py --test_statistics modchi2 --verbose 1 --template /data/i3store0/users/elims/clean_fit/fits/histoeffect//histoeffect_muon_flux_lower.p --outfile /data/i3store0/users/elims/clean_fit/fits/histoeffect//fit_muon_flux_lower.p --verbose 4"
+PARENT heffect_temp_muon_flux_lower CHILD heffect_fit_muon_flux_lower
+JOB heffect_temp_muon_flux_upper /data/condor_builds/users/elims/ezfits/clean_ezfit//dagman/temp.submit
+VARS heffect_temp_muon_flux_upper JOBNAME="heffect_temp_muon_flux_upper" command="python /data/condor_builds/users/elims/ezfits/clean_ezfit//generate_template.py --outfile /data/i3store0/users/elims/clean_fit/fits/histoeffect//histoeffect_muon_flux_upper.p --nuparam_textfile /data/i3store0/users/elims/clean_fit/nuparam_textfiles/histoeffect//muon_flux_upper.txt"
+PRIORITY heffect_temp_muon_flux_upper 8
+JOB heffect_fit_muon_flux_upper /data/condor_builds/users/elims/ezfits/clean_ezfit//dagman/fit.submit
+VARS heffect_fit_muon_flux_upper JOBNAME="heffect_fit_muon_flux_upper" command="python /data/condor_builds/users/elims/ezfits/clean_ezfit//fit_template.py --test_statistics modchi2 --verbose 1 --template /data/i3store0/users/elims/clean_fit/fits/histoeffect//histoeffect_muon_flux_upper.p --outfile /data/i3store0/users/elims/clean_fit/fits/histoeffect//fit_muon_flux_upper.p --verbose 4"
+PARENT heffect_temp_muon_flux_upper CHILD heffect_fit_muon_flux_upper
+JOB heffect_temp_norm_atmmu_lower /data/condor_builds/users/elims/ezfits/clean_ezfit//dagman/temp.submit
+VARS heffect_temp_norm_atmmu_lower JOBNAME="heffect_temp_norm_atmmu_lower" command="python /data/condor_builds/users/elims/ezfits/clean_ezfit//generate_template.py --outfile /data/i3store0/users/elims/clean_fit/fits/histoeffect//histoeffect_norm_atmmu_lower.p --nuparam_textfile /data/i3store0/users/elims/clean_fit/nuparam_textfiles/histoeffect//norm_atmmu_lower.txt"
+PRIORITY heffect_temp_norm_atmmu_lower 8
+JOB heffect_fit_norm_atmmu_lower /data/condor_builds/users/elims/ezfits/clean_ezfit//dagman/fit.submit
+VARS heffect_fit_norm_atmmu_lower JOBNAME="heffect_fit_norm_atmmu_lower" command="python /data/condor_builds/users/elims/ezfits/clean_ezfit//fit_template.py --test_statistics modchi2 --verbose 1 --template /data/i3store0/users/elims/clean_fit/fits/histoeffect//histoeffect_norm_atmmu_lower.p --outfile /data/i3store0/users/elims/clean_fit/fits/histoeffect//fit_norm_atmmu_lower.p --verbose 4"
+PARENT heffect_temp_norm_atmmu_lower CHILD heffect_fit_norm_atmmu_lower
+JOB heffect_temp_norm_atmmu_upper /data/condor_builds/users/elims/ezfits/clean_ezfit//dagman/temp.submit
+VARS heffect_temp_norm_atmmu_upper JOBNAME="heffect_temp_norm_atmmu_upper" command="python /data/condor_builds/users/elims/ezfits/clean_ezfit//generate_template.py --outfile /data/i3store0/users/elims/clean_fit/fits/histoeffect//histoeffect_norm_atmmu_upper.p --nuparam_textfile /data/i3store0/users/elims/clean_fit/nuparam_textfiles/histoeffect//norm_atmmu_upper.txt"
+PRIORITY heffect_temp_norm_atmmu_upper 8
+JOB heffect_fit_norm_atmmu_upper /data/condor_builds/users/elims/ezfits/clean_ezfit//dagman/fit.submit
+VARS heffect_fit_norm_atmmu_upper JOBNAME="heffect_fit_norm_atmmu_upper" command="python /data/condor_builds/users/elims/ezfits/clean_ezfit//fit_template.py --test_statistics modchi2 --verbose 1 --template /data/i3store0/users/elims/clean_fit/fits/histoeffect//histoeffect_norm_atmmu_upper.p --outfile /data/i3store0/users/elims/clean_fit/fits/histoeffect//fit_norm_atmmu_upper.p --verbose 4"
+PARENT heffect_temp_norm_atmmu_upper CHILD heffect_fit_norm_atmmu_upper
+JOB heffect_temp_norm_nc_lower /data/condor_builds/users/elims/ezfits/clean_ezfit//dagman/temp.submit
+VARS heffect_temp_norm_nc_lower JOBNAME="heffect_temp_norm_nc_lower" command="python /data/condor_builds/users/elims/ezfits/clean_ezfit//generate_template.py --outfile /data/i3store0/users/elims/clean_fit/fits/histoeffect//histoeffect_norm_nc_lower.p --nuparam_textfile /data/i3store0/users/elims/clean_fit/nuparam_textfiles/histoeffect//norm_nc_lower.txt"
+PRIORITY heffect_temp_norm_nc_lower 8
+JOB heffect_fit_norm_nc_lower /data/condor_builds/users/elims/ezfits/clean_ezfit//dagman/fit.submit
+VARS heffect_fit_norm_nc_lower JOBNAME="heffect_fit_norm_nc_lower" command="python /data/condor_builds/users/elims/ezfits/clean_ezfit//fit_template.py --test_statistics modchi2 --verbose 1 --template /data/i3store0/users/elims/clean_fit/fits/histoeffect//histoeffect_norm_nc_lower.p --outfile /data/i3store0/users/elims/clean_fit/fits/histoeffect//fit_norm_nc_lower.p --verbose 4"
+PARENT heffect_temp_norm_nc_lower CHILD heffect_fit_norm_nc_lower
+JOB heffect_temp_norm_nc_upper /data/condor_builds/users/elims/ezfits/clean_ezfit//dagman/temp.submit
+VARS heffect_temp_norm_nc_upper JOBNAME="heffect_temp_norm_nc_upper" command="python /data/condor_builds/users/elims/ezfits/clean_ezfit//generate_template.py --outfile /data/i3store0/users/elims/clean_fit/fits/histoeffect//histoeffect_norm_nc_upper.p --nuparam_textfile /data/i3store0/users/elims/clean_fit/nuparam_textfiles/histoeffect//norm_nc_upper.txt"
+PRIORITY heffect_temp_norm_nc_upper 8
+JOB heffect_fit_norm_nc_upper /data/condor_builds/users/elims/ezfits/clean_ezfit//dagman/fit.submit
+VARS heffect_fit_norm_nc_upper JOBNAME="heffect_fit_norm_nc_upper" command="python /data/condor_builds/users/elims/ezfits/clean_ezfit//fit_template.py --test_statistics modchi2 --verbose 1 --template /data/i3store0/users/elims/clean_fit/fits/histoeffect//histoeffect_norm_nc_upper.p --outfile /data/i3store0/users/elims/clean_fit/fits/histoeffect//fit_norm_nc_upper.p --verbose 4"
+PARENT heffect_temp_norm_nc_upper CHILD heffect_fit_norm_nc_upper
+JOB heffect_temp_norm_numu_lower /data/condor_builds/users/elims/ezfits/clean_ezfit//dagman/temp.submit
+VARS heffect_temp_norm_numu_lower JOBNAME="heffect_temp_norm_numu_lower" command="python /data/condor_builds/users/elims/ezfits/clean_ezfit//generate_template.py --outfile /data/i3store0/users/elims/clean_fit/fits/histoeffect//histoeffect_norm_numu_lower.p --nuparam_textfile /data/i3store0/users/elims/clean_fit/nuparam_textfiles/histoeffect//norm_numu_lower.txt"
+PRIORITY heffect_temp_norm_numu_lower 8
+JOB heffect_fit_norm_numu_lower /data/condor_builds/users/elims/ezfits/clean_ezfit//dagman/fit.submit
+VARS heffect_fit_norm_numu_lower JOBNAME="heffect_fit_norm_numu_lower" command="python /data/condor_builds/users/elims/ezfits/clean_ezfit//fit_template.py --test_statistics modchi2 --verbose 1 --template /data/i3store0/users/elims/clean_fit/fits/histoeffect//histoeffect_norm_numu_lower.p --outfile /data/i3store0/users/elims/clean_fit/fits/histoeffect//fit_norm_numu_lower.p --verbose 4"
+PARENT heffect_temp_norm_numu_lower CHILD heffect_fit_norm_numu_lower
+JOB heffect_temp_norm_numu_upper /data/condor_builds/users/elims/ezfits/clean_ezfit//dagman/temp.submit
+VARS heffect_temp_norm_numu_upper JOBNAME="heffect_temp_norm_numu_upper" command="python /data/condor_builds/users/elims/ezfits/clean_ezfit//generate_template.py --outfile /data/i3store0/users/elims/clean_fit/fits/histoeffect//histoeffect_norm_numu_upper.p --nuparam_textfile /data/i3store0/users/elims/clean_fit/nuparam_textfiles/histoeffect//norm_numu_upper.txt"
+PRIORITY heffect_temp_norm_numu_upper 8
+JOB heffect_fit_norm_numu_upper /data/condor_builds/users/elims/ezfits/clean_ezfit//dagman/fit.submit
+VARS heffect_fit_norm_numu_upper JOBNAME="heffect_fit_norm_numu_upper" command="python /data/condor_builds/users/elims/ezfits/clean_ezfit//fit_template.py --test_statistics modchi2 --verbose 1 --template /data/i3store0/users/elims/clean_fit/fits/histoeffect//histoeffect_norm_numu_upper.p --outfile /data/i3store0/users/elims/clean_fit/fits/histoeffect//fit_norm_numu_upper.p --verbose 4"
+PARENT heffect_temp_norm_numu_upper CHILD heffect_fit_norm_numu_upper
+JOB heffect_temp_nue_numu_ratio_lower /data/condor_builds/users/elims/ezfits/clean_ezfit//dagman/temp.submit
+VARS heffect_temp_nue_numu_ratio_lower JOBNAME="heffect_temp_nue_numu_ratio_lower" command="python /data/condor_builds/users/elims/ezfits/clean_ezfit//generate_template.py --outfile /data/i3store0/users/elims/clean_fit/fits/histoeffect//histoeffect_nue_numu_ratio_lower.p --nuparam_textfile /data/i3store0/users/elims/clean_fit/nuparam_textfiles/histoeffect//nue_numu_ratio_lower.txt"
+PRIORITY heffect_temp_nue_numu_ratio_lower 8
+JOB heffect_fit_nue_numu_ratio_lower /data/condor_builds/users/elims/ezfits/clean_ezfit//dagman/fit.submit
+VARS heffect_fit_nue_numu_ratio_lower JOBNAME="heffect_fit_nue_numu_ratio_lower" command="python /data/condor_builds/users/elims/ezfits/clean_ezfit//fit_template.py --test_statistics modchi2 --verbose 1 --template /data/i3store0/users/elims/clean_fit/fits/histoeffect//histoeffect_nue_numu_ratio_lower.p --outfile /data/i3store0/users/elims/clean_fit/fits/histoeffect//fit_nue_numu_ratio_lower.p --verbose 4"
+PARENT heffect_temp_nue_numu_ratio_lower CHILD heffect_fit_nue_numu_ratio_lower
+JOB heffect_temp_nue_numu_ratio_upper /data/condor_builds/users/elims/ezfits/clean_ezfit//dagman/temp.submit
+VARS heffect_temp_nue_numu_ratio_upper JOBNAME="heffect_temp_nue_numu_ratio_upper" command="python /data/condor_builds/users/elims/ezfits/clean_ezfit//generate_template.py --outfile /data/i3store0/users/elims/clean_fit/fits/histoeffect//histoeffect_nue_numu_ratio_upper.p --nuparam_textfile /data/i3store0/users/elims/clean_fit/nuparam_textfiles/histoeffect//nue_numu_ratio_upper.txt"
+PRIORITY heffect_temp_nue_numu_ratio_upper 8
+JOB heffect_fit_nue_numu_ratio_upper /data/condor_builds/users/elims/ezfits/clean_ezfit//dagman/fit.submit
+VARS heffect_fit_nue_numu_ratio_upper JOBNAME="heffect_fit_nue_numu_ratio_upper" command="python /data/condor_builds/users/elims/ezfits/clean_ezfit//fit_template.py --test_statistics modchi2 --verbose 1 --template /data/i3store0/users/elims/clean_fit/fits/histoeffect//histoeffect_nue_numu_ratio_upper.p --outfile /data/i3store0/users/elims/clean_fit/fits/histoeffect//fit_nue_numu_ratio_upper.p --verbose 4"
+PARENT heffect_temp_nue_numu_ratio_upper CHILD heffect_fit_nue_numu_ratio_upper
+JOB heffect_temp_scattering_lower /data/condor_builds/users/elims/ezfits/clean_ezfit//dagman/temp.submit
+VARS heffect_temp_scattering_lower JOBNAME="heffect_temp_scattering_lower" command="python /data/condor_builds/users/elims/ezfits/clean_ezfit//generate_template.py --outfile /data/i3store0/users/elims/clean_fit/fits/histoeffect//histoeffect_scattering_lower.p --nuparam_textfile /data/i3store0/users/elims/clean_fit/nuparam_textfiles/histoeffect//scattering_lower.txt"
+PRIORITY heffect_temp_scattering_lower 8
+JOB heffect_fit_scattering_lower /data/condor_builds/users/elims/ezfits/clean_ezfit//dagman/fit.submit
+VARS heffect_fit_scattering_lower JOBNAME="heffect_fit_scattering_lower" command="python /data/condor_builds/users/elims/ezfits/clean_ezfit//fit_template.py --test_statistics modchi2 --verbose 1 --template /data/i3store0/users/elims/clean_fit/fits/histoeffect//histoeffect_scattering_lower.p --outfile /data/i3store0/users/elims/clean_fit/fits/histoeffect//fit_scattering_lower.p --verbose 4"
+PARENT heffect_temp_scattering_lower CHILD heffect_fit_scattering_lower
+JOB heffect_temp_scattering_upper /data/condor_builds/users/elims/ezfits/clean_ezfit//dagman/temp.submit
+VARS heffect_temp_scattering_upper JOBNAME="heffect_temp_scattering_upper" command="python /data/condor_builds/users/elims/ezfits/clean_ezfit//generate_template.py --outfile /data/i3store0/users/elims/clean_fit/fits/histoeffect//histoeffect_scattering_upper.p --nuparam_textfile /data/i3store0/users/elims/clean_fit/nuparam_textfiles/histoeffect//scattering_upper.txt"
+PRIORITY heffect_temp_scattering_upper 8
+JOB heffect_fit_scattering_upper /data/condor_builds/users/elims/ezfits/clean_ezfit//dagman/fit.submit
+VARS heffect_fit_scattering_upper JOBNAME="heffect_fit_scattering_upper" command="python /data/condor_builds/users/elims/ezfits/clean_ezfit//fit_template.py --test_statistics modchi2 --verbose 1 --template /data/i3store0/users/elims/clean_fit/fits/histoeffect//histoeffect_scattering_upper.p --outfile /data/i3store0/users/elims/clean_fit/fits/histoeffect//fit_scattering_upper.p --verbose 4"
+PARENT heffect_temp_scattering_upper CHILD heffect_fit_scattering_upper
+JOB heffect_temp_theta23_lower /data/condor_builds/users/elims/ezfits/clean_ezfit//dagman/temp.submit
+VARS heffect_temp_theta23_lower JOBNAME="heffect_temp_theta23_lower" command="python /data/condor_builds/users/elims/ezfits/clean_ezfit//generate_template.py --outfile /data/i3store0/users/elims/clean_fit/fits/histoeffect//histoeffect_theta23_lower.p --nuparam_textfile /data/i3store0/users/elims/clean_fit/nuparam_textfiles/histoeffect//theta23_lower.txt"
+PRIORITY heffect_temp_theta23_lower 8
+JOB heffect_fit_theta23_lower /data/condor_builds/users/elims/ezfits/clean_ezfit//dagman/fit.submit
+VARS heffect_fit_theta23_lower JOBNAME="heffect_fit_theta23_lower" command="python /data/condor_builds/users/elims/ezfits/clean_ezfit//fit_template.py --test_statistics modchi2 --verbose 1 --template /data/i3store0/users/elims/clean_fit/fits/histoeffect//histoeffect_theta23_lower.p --outfile /data/i3store0/users/elims/clean_fit/fits/histoeffect//fit_theta23_lower.p --verbose 4"
+PARENT heffect_temp_theta23_lower CHILD heffect_fit_theta23_lower
+JOB heffect_temp_theta23_upper /data/condor_builds/users/elims/ezfits/clean_ezfit//dagman/temp.submit
+VARS heffect_temp_theta23_upper JOBNAME="heffect_temp_theta23_upper" command="python /data/condor_builds/users/elims/ezfits/clean_ezfit//generate_template.py --outfile /data/i3store0/users/elims/clean_fit/fits/histoeffect//histoeffect_theta23_upper.p --nuparam_textfile /data/i3store0/users/elims/clean_fit/nuparam_textfiles/histoeffect//theta23_upper.txt"
+PRIORITY heffect_temp_theta23_upper 8
+JOB heffect_fit_theta23_upper /data/condor_builds/users/elims/ezfits/clean_ezfit//dagman/fit.submit
+VARS heffect_fit_theta23_upper JOBNAME="heffect_fit_theta23_upper" command="python /data/condor_builds/users/elims/ezfits/clean_ezfit//fit_template.py --test_statistics modchi2 --verbose 1 --template /data/i3store0/users/elims/clean_fit/fits/histoeffect//histoeffect_theta23_upper.p --outfile /data/i3store0/users/elims/clean_fit/fits/histoeffect//fit_theta23_upper.p --verbose 4"
+PARENT heffect_temp_theta23_upper CHILD heffect_fit_theta23_upper

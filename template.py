@@ -3,35 +3,23 @@
 ####
 #### By Elim Cheung (07/24/2018)
 ####
-#### This script generates MC template by the following procedures.
+#### This script includes basic functions to
+#### define a template object with MC and data
+#### histograms.
 ####
-#### 0. Save info from input arguments
-#### 1. Load all pickled files in Step 0
-####
-#### ================ TO OBTAIN MC TEMPLATE =================
-#### 2. Get baseline histograms
-####    base weighters and propmaps are saved to Template
-#### 3. Get hyperplane objects for all data types
-####    hyperplanes are saved to Template
-#### 5. Multiply baseline histogram by factors
-#### ====== The resultant histogram is the MC template ======
-####
-#### ================= TO OBTAIN DATA HISTO =================
-#### 6. Get data histogram
-#### ==== The resultant histogram is the data histogram =====
-####
-#### 7. Evaluate chi2 out of the box
+#### See generate_template.py to see how this
+#### class is used.
+#### 
+#### NOTE: all histograms are stored in Hz.
 ####################################################################
 
 from __future__ import print_function
 import numpy as np
-import cPickle
+import cPickle, os
 
-from misc import Map, Info
+from misc import Map, seconds_per_year
 from member import Member
 from library import Library
-from nuparams import Nuparams
-from likelihood import Likelihood
 
 ####################################################################
 #### Template class
@@ -39,10 +27,18 @@ from likelihood import Likelihood
 class Template (object):
 
     ''' A class to create an object with MC template and data
-        histogram.
+        histogram based on user's setting.
     '''
     
-    def __init__(self, **kwargs):
+    def __init__(self,
+                 members         =None ,
+                 edges           =None ,
+                 pdictpath       =None ,
+                 nuparam_textfile=None ,
+                 matter          =True ,
+                 oscnc           =False,
+                 inverted        =False,
+                 verbose         =1    ):
 
         ''' initialize template class '''
         
@@ -50,76 +46,34 @@ class Template (object):
         print ('#### ############# Generate Template  #################')
         print ('####')
 
-        ###################################################
-        #### check / store / print user's inputs
-        ###################################################
-        print ('#### Checking your inputs ...')
-        print ('####')
-        self.info = Info (**kwargs)
-        self.nuparams = Nuparams (self.info ('nuparam_textfile'),
-                                  isinverted=self.info ('inverted'))
-        print ('{0}'.format (self.info))
-        print ('{0}'.format (self.nuparams))
-
-        ###################################################
-        #### collect constants
-        ###################################################
-        params    = self.nuparams.extract_params ('seeded')
-        datatypes = self.info.get_datatypes ()
-        outfile   = self.info ('outfile')
+        #### define properties
+        ## histograms
+        self._members = members
+        self._edges   = edges
+        ## paths
+        self._ppath  = pdictpath
+        self._nufile = nuparam_textfile
+        ## oscprob
+        self._matter   = matter
+        self._oscnc    = oscnc
+        self._inverted = inverted
+        ## misc
+        self._fitdata = None
+        self._hplanes = None
+        self._verbose = verbose
         
-        ###################################################
-        #### get baseline histograms (bhistos)
-        ###################################################
-        print ('#### Getting baseline histograms ...')
-        print ('####')
-        lib, bhistos = self.get_baseline_histograms (datatypes, params)
-        self.bhistos = bhistos
-        self.probmaps = lib.probmaps
-        self._print_rates ('baseline', bhistos)
+    ###################################################
+    #### string representation for Template
+    ###################################################
+    def __repr__ (self):
 
-        ######################################################
-        #### get hyperplanes and modify base_histos (mhistos)
-        ######################################################
-        print ('#### Getting hyperplane objects ...')
-        print ('####')
-        self.hplanes = lib.get_hplanes (self.nuparams, params,
-                                        verbose=self.info ('verbose'))
-        
-        ###################################################
-        #### get total mc template
-        ###################################################
-        print ('#### Getting MC template ...')
-        print ('####')
-        mhistos, template, variance = self.get_template (datatypes,
-                                                         params, lib,
-                                                         bhistos)
-        self.mhistos = mhistos
-        self._print_rates ('hplaned', mhistos)
-        self.template = {'H':template, 'H2':variance}
-        self._print_rates ('template', self.template)
+        ''' how to create a template in code '''
 
-        ###################################################
-        #### get data histogram
-        ###################################################
-        print ('#### Getting data histogram ...')
-        print ('####')
-        template, variance = self.get_data (datatypes, params)
-        self.dhisto = Map ({'H':template, 'H2':variance})
-        self._print_rates ('data', self.dhisto)
-        
-        ###################################################
-        #### calculate chi2 before any fit
-        ###################################################
-        print ('#### Evaluating chi2 out of the box ...')
-        print ('####')
-        LH = Likelihood (self.dhisto, 'modchi2',
-                         verbose=self.info ('verbose') )
-        LH.set_histos (self.mhistos)
-        ts, bints, As = LH.get_ts ()
-        print ('#### modified chi2: {0}'.format (2*ts))
-        print ('#### ################################################')
+        return "Template ()"
 
+    ###################################################
+    #### set/get state of Template
+    ###################################################
     def __getstate__ (self):
 
         ''' get state for pickling '''
@@ -131,104 +85,17 @@ class Template (object):
         ''' set state for pickling '''
 
         self.__dict__ = d
-    
-    def get_baseline_histograms (self, dtypes, params):
 
-        ''' obtain all baseline histograms for all data types
+    ###################################################
+    #### internal function to print rates
+    ###################################################
+    def _print_rates (self, htype, histos, nyears=None):
 
-            :type  dtypes: a list / array
-            :param dtypes: data types included in this template
+        ''' print histogram rate
 
-            :type  params: dictionary
-            :param params: values of floating parameters
-
-            :retrun  lib: a Library class
-                     lib: for manipulating members
-        
-            :retrun  bhistos: a dictionary
-                     bhistos: baseline histograms from all members
+            If nyears is provided,
+            scale histos by livetime
         '''
-
-        lib = Library (dtypes, self.info ('pdictpath'),
-                       ranges=self.info.get_ranges (),
-                       edges=self.info.get_edges (),
-                       verbose=self.info ('verbose'))
-        lib.set_weighters (params,
-                           matter=self.info ('matter'),
-                           oscnc=self.info ('oscnc'))
-        bhistos = lib.collect_base_histograms (params)
-        return lib, bhistos
-    
-    def get_template (self, dtypes, params, lib, histos):
-
-        ''' obtain a template from all data types
-
-            :type  dtypes: a list / array
-            :param dtypes: data types included in this template
-
-            :type  params: dictionary
-            :param params: values of floating parameters
-
-            :type  lib: a Library class
-            :param lib: for manipulating members
-        
-            :type  histos: a dictionary
-            :param histos: baseline histograms from all members
-
-            :return mhistos: a dictionary
-                    mhistos: modified histogram from hyperplane
-
-            :retrun mc: a multi-dimensional array
-                    mc: MC template histogram
-
-            :return var: a multi-dimensional array
-                    var: variance of MC template
-        '''
-        
-        mhistos = lib.apply_hplanes (histos, self.hplanes, params)
-
-        ### sum up histograms and variances
-        mc = np.array (sum ([ mhistos[dtype]['H'] for dtype in dtypes ]))
-        var = np.array (sum ([ mhistos[dtype]['H2'] for dtype in dtypes ]))
-        return mhistos, mc, var
-        
-    def get_data (self, datatypes, params):
-
-        ''' obtain data histogram
-
-            :type  params: dictionary
-            :param params: values of floating parameters
-
-            :type  datatypes: a list / array 
-            :param datatypes: name of data types involved
-
-            :retrun H: a multi-dimensional array
-                    H: data histogram
-
-            :return H2: a multi-dimensional array
-                    H2: variance of data histogram
-        '''
-        
-        if self.info ('fit_data'):
-            data = Member ('data', self.info ('pdictpath'),
-                           ranges=self.info.get_ranges ())
-            w = data.get_weights (params)
-            return data.get_histogram (self.info.get_edges (), weights=w)
-        elif self.nuparams.diff_injected_seeded ():
-            ## get injdected parameters
-            params    = self.nuparams.extract_params ('injected')
-            ## library and baseline histograms from the injected param
-            lib, bhistos = self.get_baseline_histograms (datatypes, params)
-            ## same hyperplane
-            ## get template with injected data
-            mhisto, H, H2 = self.get_template (datatypes, params, lib, bhistos)
-            return H, H2
-        
-        return self.template['H'], self.template['H2']
-
-    def _print_rates (self, htype, histos):
-
-        ''' print histogram rate '''
 
         ## print header
         print ('#### ##################################################')
@@ -240,20 +107,25 @@ class Template (object):
         print ('#### {0}'.format ('-'*48))
         ## print line
         if htype in ['data', 'template']:
-            self._print_line (htype, histos)
+            self._print_line (htype, histos, nyears=nyears)
         else: ## per data type
-            for dtype in self.info.get_datatypes ():
-                self._print_line (dtype, histos[dtype])
+            for dtype in self.members:
+                self._print_line (dtype, histos[dtype],
+                                  nyears=nyears)
         ## print end
         print ('#### {0}'.format ('-'*48))
         print ('####')
     
-    def _print_line (self, dtype, histo):
+    def _print_line (self, dtype, histo, nyears=None):
 
-        ''' print rate info of a given histogram '''
+        ''' print rate info of a given histogram
+
+            If nyears is provided,
+            scale histos by livetime
+        '''
         
         line = '####  {0:9} | {1:5} {2:3} | {3:5} {4:3} | {5:5} {6:3} |'
-        numbers = self._collect_numbers (histo)
+        numbers = self._collect_numbers (histo, nyears=nyears)
         print (line.format (dtype.center (7),
                             int (numbers['nevents'][0]),
                             int (numbers['nevents'][1]),
@@ -262,23 +134,274 @@ class Template (object):
                             int (numbers['track'][0]),
                             int (numbers['track'][1])  ))
 
-    def _collect_numbers (self, histo):
+    def _collect_numbers (self, histo, nyears=None):
 
         ''' collect rates (and uncertainty)
+
+            If nyears is provided, 
+            scale histos by livetime 
 
             :type   histo: a dictionary
             :param  histo: {'H':[], 'H2':[]}
 
             :return numbers: a dictionary
-                    numbers: total rates / cascade / track of a given histo
+                    numbers: total rates / cascade /
+                             track counts and variances
         '''
-        
-        cascade  = np.sum (histo['H'][:,:,0])
-        cascade2 = np.sqrt (np.sum (histo['H2'][:,:,0]))
-        track  = np.sum (histo['H'][:,:,1])
-        track2 = np.sqrt (np.sum (histo['H2'][:,:,1]))
-        nevents  = np.sum (histo['H'])
-        nevents2 = np.sqrt (np.sum (histo['H2']))
+
+        factor = nyears * seconds_per_year if nyears else 1.0
+        cascade  = np.sum (histo['H'][:,:,0]) * factor
+        cascade2 = np.sqrt (np.sum (histo['H2'][:,:,0])) * factor
+        track  = np.sum (histo['H'][:,:,1]) * factor
+        track2 = np.sqrt (np.sum (histo['H2'][:,:,1])) * factor
+        nevents  = cascade + track
+        nevents2 = np.sqrt (cascade2**2 + track2**2)
         return {'nevents': (nevents, nevents2),
                 'cascade': (cascade, cascade2),
                 'track'  : (track  , track2  )}
+        
+    ###################################################
+    #### misc functions
+    ###################################################
+    def get_ranges (self):
+
+        ''' get ranges of histograms '''
+        
+        ranges = {}
+        for edge in ['e', 'z', 'p']:
+            ranges[edge] = (self.edges[edge][0],
+                            self.edges[edge][-1])
+        return ranges
+
+    ###################################################
+    #### external function to get baseline histograms
+    ###################################################
+    def get_baseline_histograms (self, params):
+
+        ''' obtain all baseline histograms for all data types
+
+            :type  params: dictionary
+            :param params: values of floating parameters
+
+            :return  lib: Library instance
+                     lib: a library instance with weighters set
+
+            :retrun  bhistos: a dictionary
+                     bhistos: baseline histograms from all members
+        '''
+        
+        ### set up a library to handle baseline members
+        lib = Library (self.members, self.ppath,
+                       ranges =self.get_ranges (),
+                       edges  =self.edges,
+                       verbose=self.verbose)
+
+        ### set up weighters for baseline members
+        lib.set_weighters (params,
+                           matter=self.matter,
+                           oscnc =self.oscnc )
+
+        ### store and print results
+        bhistos  = lib.collect_base_histograms (params)
+        self.probmaps = lib.probmaps
+        self._print_rates ('baseline', bhistos,
+                           nyears=params['nyears'])
+        
+        return lib, bhistos
+
+    ###################################################
+    #### external function to get MC template
+    ###################################################
+    def get_template (self, params, lib, bhistos):
+
+        ''' obtain a template from all data types
+
+            :type  params: dictionary
+            :param params: values of floating parameters
+
+            :type  lib: a Library class
+            :param lib: for manipulating members
+
+            :type  bhistos: a dictionary 
+            :param bhistos: baseline histogram and variances
+                            for each member in template (Hz)
+       
+            :retrun template: a dictionary
+                    template: count and variance
+                              of template histogram (in counts)
+        '''
+
+        ### apply hyperplanes
+        mhistos = lib.apply_hplanes (bhistos,
+                                     self.hplanes,
+                                     params)
+
+        ### apply normalization
+        mhistos = lib.scale_histos (mhistos, params)
+        
+        ### sum up histograms and variances
+        mc = np.array (sum ([ mhistos[dtype]['H']
+                              for dtype in self.members ]))
+        var = np.array (sum ([ mhistos[dtype]['H2']
+                               for dtype in self.members ]))
+
+        ### store and print information
+        template = {'H':mc, 'H2':var}
+        self._print_rates ('hplaned' , mhistos)
+        self._print_rates ('template', template)
+        return mhistos, template
+
+    ###################################################
+    #### external function to get data histogram
+    ###################################################
+    def get_data (self, params, fitdata, diff):
+
+        ''' obtain data histogram
+
+            :type  params: dictionary
+            :param params: values of floating parameters
+
+            :type  fitdata: boolean
+            :param fitdata: If True, fit to real data
+
+            :type  diff: boolean
+            :param diff: If True, injected is different from seeded
+
+            :retrun H: a multi-dimensional array
+                    H: data histogram in counts
+
+            :return H2: a multi-dimensional array
+                    H2: variance of data histogram
+        '''
+
+        if fitdata:
+            ## If fitdata, fit to real data
+            data = Member ('data', self.ppath,
+                           ranges=self.get_ranges ())
+            weights = data.get_weights (params)
+            H, H2 = data.get_histogram (self.edges, weights=weights)
+            ## scaled by factors (in counts)
+            norm = seconds_per_year * params['nyears']
+            H *= norm
+            H2 *= norm**2
+
+        elif diff:
+            ## If injected and seeded are different, build data histogram
+            ## library and baseline histograms from the injected param
+            lib, bhistos = self.get_baseline_histograms (params)
+            ## get template with injected data
+            mhisto, temp = self.get_template (params, lib, bhistos)
+            H, H2 = temp['H'], temp['H2']
+
+        else:
+            ## If none of the above, copy mc template from baseline
+            H, H2 = self.template['H'], self.template['H2']
+
+        ## store and print data histogram
+        self.dhisto = Map ({'H':H, 'H2':H2})
+        self._print_rates ('data', self.dhisto)
+        return self.dhisto
+
+    ###################################################
+    #### properties of Template
+    ###################################################
+    ### histogram relateted
+    @property
+    def members (self):
+        return self._member
+
+    @members.setter
+    def members (self, members):
+        self._member = members
+
+    @property
+    def edges (self):
+        return self._edges
+
+    @edges.setter
+    def edges (self, edges):
+        self._edges = edges
+
+    @property
+    def bhistos (self):
+        return self._bhistos
+
+    @bhistos.setter
+    def bhistos (self, bhistos):
+        self._bhistos = bhistos
+
+    @property
+    def mhistos (self):
+        return self._mhistos
+
+    @mhistos.setter
+    def mhistos (self, mhistos):
+        self._mhistos = mhistos
+
+    @property
+    def template (self):
+        return self._template
+
+    @template.setter
+    def template (self, template):
+        self._template = template
+        
+    ### path related
+    @property
+    def ppath (self):
+        return self._ppath
+
+    @ppath.setter
+    def ppath (self, pdictpath):
+        self._ppath = pdictpath
+
+    @property
+    def nufile (self):
+        return self._nufile
+
+    @nufile.setter
+    def nufile (self, nuparam_textfile):
+        self._nufile = nuparam_textfile
+    
+    ### oscprob related
+    @property
+    def matter (self):
+        return self._matter
+
+    @matter.setter
+    def matter (self, matter):
+        self._matter   = matter
+
+    @property
+    def oscnc (self):
+        return self._oscnc
+
+    @oscnc.setter
+    def oscnc (self, oscnc):
+        self._oscnc    = oscnc
+
+    @property
+    def inverted (self):
+        return self._inverted
+
+    @inverted.setter
+    def inverted (self, inverted):
+        self._inverted = inverted
+    
+    ### misc
+    @property
+    def hplanes (self):
+        return self._hplanes
+
+    @hplanes.setter
+    def hplanes (self, hplanes):
+        self._hplanes = hplanes
+    
+    @property
+    def verbose (self):
+        return self._verbose
+
+    @verbose.setter
+    def verbose (self, verbose):
+        self._verbose = verbose
+

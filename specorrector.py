@@ -10,9 +10,6 @@
 from __future__ import print_function
 import numpy as np
 from scipy.interpolate import RectBivariateSpline
-from misc import InvalidArguments, Toolbox 
-
-toolbox = Toolbox ()
 
 class SPEPeakCorrector (object):
 
@@ -47,7 +44,7 @@ class SPEPeakCorrector (object):
                             :param   order: linear is recommanded
 
                         '''
-                        
+
                         self._q_nch = np.nan_to_num (q_nch)
                         self._w     = w
                         self._bins  = bins
@@ -77,10 +74,6 @@ class SPEPeakCorrector (object):
                             :return factor: a 1D numpy array
                                     factor: reweighting factor due to SPE shift
                         '''
-
-                        if not isinstance (percent_shift, float):
-                                    message = 'SPECorr:call :: percent_shift must be a float'
-                                    raise InvalidArguments (message)
 
                         factor = self._spline2D.ev ([percent_shift]*len(self._q_nch), self._q_nch)
                         return np.nan_to_num (factor)

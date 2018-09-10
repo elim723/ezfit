@@ -23,6 +23,7 @@ import weightcalculator
 #### import constants needed
 ####################################################################
 from misc import datatypes, seconds_per_year, default_ranges, greco_nyears
+from misc import default_nu_sysvalues, default_mu_sysvalues
 toolbox = Toolbox ()
 
 ####################################################################
@@ -75,13 +76,21 @@ class Member (object):
 
             self._dtype      = dtype
             self._isbaseline = baseline
-            self._sysvalues  = sysvalues
+            self._sysvalues  = self._get_sysvalues (sysvalues)
             self._pdictpath  = pdictpath
             self._ranges     = ranges
             
             self._pfile = self._get_pfile ()
             self._events = self._load_events ()
 
+        def _get_sysvalues (self, sysvalues):
+                
+                default = default_mu_sysvalues if 'muon' in self._dtype else default_nu_sysvalues
+                for param in default:
+                        if param not in sysvalues:
+                                sysvalues[param] = default[param]
+                return sysvalues
+            
         def __getstate__ (self):
 
                 ''' get state for pickling '''

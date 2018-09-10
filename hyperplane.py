@@ -71,15 +71,18 @@ class HyperPlane (object):
 
         self._dtype = dtype
         self._histos = histos
-        self._hparams = sorted (hparams)
+        self._hparams = np.array (sorted (hparams))
         self._expparams = expparams
         self._verbose = verbose
 
+        ## add oversizing if abs/sca included
+        if 'muon' in self._dtype and \
+           ('absorption' in self._hparams or 'scattering' in self._hparams):
+            self._hparams = np.array (sorted (list (self._hparams) + ['oversizing']))
+            
         ## set parameters
-        self._default = default_mu_sysvalues if 'muon' in dtype else default_nu_sysvalues
-        ## add oversizing in case of muon
-        if 'muon' in dtype: self._hparams += ['oversizing'] 
-        self._refvalues = [ global_sysvalues[hparam] for hparam in self._hparams ]
+        self._default = self._get_default ()
+        self._refvalues = [ global_sysvalues[hparam] for hparam in self._default ]
         self._fitparams, self._fitseeds = self._set_params ()
         ## print info if verbose
         if self._verbose > 1: self._print_params ()
@@ -87,6 +90,15 @@ class HyperPlane (object):
         ## fit hyperplane (the meat)
         self._ndof, self._coeffs, self._chi2_before, self._chi2_after = self._fit_plane ()
 
+    def _get_default (self):
+
+        ''' determine the default dictionary based on
+            dtype and the given hplane parameters
+        '''
+        
+        default = default_mu_sysvalues if 'muon' in self._dtype else default_nu_sysvalues
+        return { hparam:default[hparam] for hparam in self._hparams }
+        
     def __getstate__ (self):
 
         ''' get state for pickling '''
@@ -110,6 +122,7 @@ class HyperPlane (object):
         
         print ('#### number of discrete parameters included: {0} '.format (xvalues.shape[0]))
         print ('#### number of discrete sets included: {0} '.format (xvalues.shape[1]))
+        print ('#### xvalues: {0}'.format (xvalues))
         print ('####')
     
     def _print_params (self):
@@ -230,11 +243,14 @@ class HyperPlane (object):
             :return setid: a string
                     setid: systematic values separated by '_' as the id of this set
         '''
+
+        default = default_mu_sysvalues if 'muon' in self._dtype else default_nu_sysvalues
         
         refid = ''
-        for i, dp in enumerate (sorted (self._default)):
-            refid += str (float (self._default[dp]))
-            if not i==len (self._default)-1: refid += '_'
+        for i, dp in enumerate (sorted (default)):
+            value = self._default[dp] if dp in self._default else default[dp]
+            refid += str (float (value))
+            if not i==len (default)-1: refid += '_'
         return refid
 
     def _get_values (self):
@@ -254,6 +270,9 @@ class HyperPlane (object):
         '''
 
         xvalues, yvalues, variances = [], [], []
+        default = default_mu_sysvalues if 'muon' in self._dtype else default_nu_sysvalues
+        default = np.array (sorted (default))
+        indices = [np.where (self._hparams[i]==default)[0] for i in xrange (len (self._hparams))]
 
         refid = self._get_refid ()
         try:
@@ -264,14 +283,12 @@ class HyperPlane (object):
             refid = refid.replace ('25', '30')
             ref_w  = self._histos [refid]['H']
             ref_w2 = self._histos [refid]['H2']
-        print ('-- {0}'.format (self._dtype))
-        print ('  -- default: {0}'.format (self._default))
-        print ('  -- refid  : {0}'.format (refid))
 
         for setid in self._histos.keys ():
 
             ## xvalue = discrete set values
             string = setid.split ('_')
+            string = [s for i, s in enumerate (string) if i in indices]
             xvalue = np.array ([ float (v) for v in string ])
 
             ## yvalue = ratio of H to ref histogram
@@ -343,6 +360,9 @@ class HyperPlane (object):
             :type   param: a string
             :param  param: name of parameter of interest
           
+            :type   xs: array of array
+            :param  xs: xvalues of given discrete sets
+
             :type   index: an int
             :param  index: index of param in self._dparam
         '''
@@ -513,7 +533,7 @@ class HyperPlane (object):
         '''
         
         ## constant is the last 
-        yest = coeffs [-1]
+        yest = deepcopy (coeffs [-1])
         
         ## loop through each discrete parameter
         for index, param in enumerate (self._hparams):
@@ -546,8 +566,9 @@ class HyperPlane (object):
         '''
 
         params = deepcopy (params)
-        ## add oversizing if muon
-        if 'muon' in self._dtype:
+        ## add oversizing if muon and bulk ice included
+        if 'muon' in self._dtype and \
+           ('absorption' in self._hparams or 'scattering' in self._hparams):
             params ['oversizing'] = 1.0
 
         ## massage parameter values

@@ -356,8 +356,6 @@ class Fitter (object):
         same = {}
         for param in self._params:
             same [param] = params [param] == self._params [param]
-            if not same[param]:
-                print ('fitter::check_params: {0} is changed '.format (param))
         if self._verbose > 1: self._print_line (params, same)
         return 
     

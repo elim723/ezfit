@@ -235,9 +235,13 @@ class Template (object):
         mhistos = lib.apply_hplanes (bhistos,
                                      self.hplanes,
                                      params)
-
+        self._print_rates ('mhistos before norm',
+                           mhistos,
+                           nyears=params['nyears'])
+        
         ### apply normalization
         mhistos = lib.scale_histos (mhistos, params)
+        self._print_rates ('mhistos after norm' , mhistos)
         
         ### sum up histograms and variances
         mc = np.array (sum ([ mhistos[dtype]['H']

@@ -130,6 +130,7 @@ def get_lib_histos (params):
     mhistos, template = temp.get_template (params, lib, bhistos)
     dhisto = temp.dhisto
     if verbose > 0:
+        temp._print_rates ('baseline', bhistos)
         temp._print_rates ('hplaned', mhistos)
         temp._print_rates ('template', template)
         temp._print_rates ('data', dhisto)
